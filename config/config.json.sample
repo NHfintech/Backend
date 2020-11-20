@@ -1,0 +1,11 @@
+{ 
+    "development": { 
+        "username": "root",
+        "password": "1234",
+        "database": "nh_db",
+        "host": "127.0.0.1",
+        "dialect": "mysql",
+        "operatorAliases" : false,
+        "logging": false
+    }
+}
