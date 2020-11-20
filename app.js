@@ -8,14 +8,13 @@ const sequelize = require('./models').sequelize;
 
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
+const usersRouter = require('./routes/users');
 
 // TODO: not use yet 
-// const usersRouter = require('./routes/users');
 // const breakdownRouter = require('./routes/breakdown');
 // const eventRouter = require('./routes/event');
 // const guestRouter = require('./routes/guest');
 // const organizerRouter  = require('./routes/organizer');
-
 
 const app = express();
 sequelize.sync();
@@ -48,7 +47,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/auth', authRouter);
-// app.use('/users', usersRouter);
+app.use('/users', usersRouter);
 // app.use('/breakdown', breakdownRouter);
 // app.use('/event', eventRouter);
 // app.use('/guest', guestRouter);
