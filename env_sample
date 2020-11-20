@@ -1,0 +1,6 @@
+RDS_HOSTNAME='db.xxxxxxx.ap-xxxxxx.rds.amazonaws.com'
+RDS_USERNAME='user'
+RDS_PASSWORD='your password'
+RDS_PORT='3306'
+JWT_SECRET = ''
+
