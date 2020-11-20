@@ -7,7 +7,7 @@ const logger = require('morgan');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const breakdownRouter = require('./routes/breakdown');
-const eventRouter = require('/routes/event');
+const eventRouter = require('./routes/event');
 const guestRouter = require('./routes/guest');
 const organizerRouter  = require('./routes/organizer');
 const app = express();
@@ -31,7 +31,7 @@ app.use('/users', usersRouter);
 app.use('/breakdown', breakdownRouter);
 app.use('/event', eventRouter);
 app.use('/guest', guestRouter);
-app.use('./organizer', organizerRouter);
+app.use('/organizer', organizerRouter);
 
 app.use(function(req, res, next) {
     next(createError(404));
