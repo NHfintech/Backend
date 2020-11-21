@@ -4,16 +4,16 @@ const models = require('../models');
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
-  models.User.findOne({where : {phone_number : req.query.phone_number}})
+  models.User.findOne({where : {username : req.query.username}})
     .then(result =>
       res.json({
-        message : "이미 가입된 핸드폰 번호가 있습니다.",
+        message : "이미 가입된 아이디가 있습니다.",
         result : result
       })
     )
     .catch(err => {
       res.json({
-        message : "가입된 핸드폰 번호가 없습니다.",
+        message : "가입된 핸드폰 아이디가 없습니다.",
         result : err
       })
     });
