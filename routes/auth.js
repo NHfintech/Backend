@@ -49,7 +49,9 @@ router.post('/login', async function(req, res, next) {
 
         if(user === null) {
             console.log("cannot find user");
-            res.status(404).send('No user found.')
+            res.status(404).json({
+                'detail': 'No user found.'
+            })
         }
         else {        
             console.log(user.dataValues);
@@ -71,7 +73,10 @@ router.post('/login', async function(req, res, next) {
             }
             else {
                 console.log("pw incorrect");
-                res.status(401).send({auth: false, token: null})       
+                res.status(401).json({
+                    auth: false,
+                    token: null
+                })       
             }
         }
     }    
