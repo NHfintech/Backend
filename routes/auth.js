@@ -1,6 +1,31 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 const {User} = require('../models');
+const env = process.env.NODE_ENV || 'development';
+const config = require(path.join(__dirname, '..', 'config', 'config.json'))[env];
+
+function jwtSignUser(user) {
+    const ONE_WEEK = 60 * 60 * 24 * 7;
+    return jwt.sign({data: user}, config.jwtSecret, {
+      expiresIn: ONE_WEEK
+    })
+}
+
+// function getUser(req, res) {
+//     if (req.headers && req.headers.authorization) {
+//       let authorization = req.headers.authorization
+//       let decoded = ''
+//       try {
+//         decoded = jwt.verify(authorization, config.jwtSecret);
+//       } catch (e) {
+//         return {detail: 'unauthorized'}
+//       }
+//       return {detail: 'success', user: decoded.data}
+//       // Fetch the user by id
+//     }
+//     return {detail: 'no header'};
+// }
 
 //TODO : DELETE
 router.get('/', function(req, res, next) {
@@ -19,30 +44,34 @@ router.post('/login', async function(req, res, next) {
     try {
 
         const {body} = req;
-        const result = await User.findOne({attributes : ['id', 'password'], where : {username : body.username}});
+        const user = await User.findOne({attributes : ['id', 'password'], where : {username : body.username}});
 
-        if(result === null) {
+        if(user === null) {
             console.log("cannot find user");
-            res.json("cannot find user");
+            res.status(404).send('No user found.')
         }
         else {        
-            console.log(result.dataValues);
-            let dbPassword = result.dataValues.password;
-            let inputPassword = body.password;
+            console.log(user.dataValues);
+            const dbPassword = user.dataValues.password;
+            const inputPassword = body.password;
 
             // TODO: hash salt
-            // let salt = result.dataValues.salt;
+            // let salt = user.dataValues.salt;
             // let hashPassword = crypto.createHash("sha512").update(inputPassword + salt).digest("hex");
             // if(dbPassword === hashPassword){ 
 
-            if(dbPassword === inputPassword){     
+            if(dbPassword === inputPassword){ 
                 console.log("pw correct");        
-                req.session.name = body.username;
+                res.json({
+                    auth: true,
+                    token: jwtSignUser(user),
+                    user: user
+                  });
             }
             else {
-                console.log("pw incorrect");            
+                console.log("pw incorrect");
+                res.status(401).send({auth: false, token: null})       
             }
-            res.redirect("/auth");
         }
     }    
     catch (error) {
