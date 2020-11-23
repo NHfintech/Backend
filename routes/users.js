@@ -3,8 +3,8 @@ const router = express.Router();
 const {User} = require('../models');
 
 /* GET users listing. */
-router.get('/', async function(req, res, next) {
-    var result = await User.findOne({where: {username: req.query.username}});
+router.get('/overlap', async function(req, res, next) {
+    const result = await User.findOne({where: {username: req.query.username}});
 
     console.dir(result);
 
@@ -20,9 +20,9 @@ router.get('/', async function(req, res, next) {
     }
 });
 
-router.post('/', async function(req, res, next) {
+router.post('/signup', async function(req, res, next) {
     try {
-        var result = await User.create({
+        const result = await User.create({
             username: req.body.username,
             password: req.body.password,
             name: req.body.name,
