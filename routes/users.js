@@ -19,7 +19,7 @@ const CODE = {
 };
 
 function phoneNumberCheck(phone) {
-    const regExp = /^\d{3}-\d{3,4}-\d{4}$/;
+    const regExp = /(01[016789])([1-9]{1}[0-9]{2,3})([0-9]{4})$/;
     if(!regExp.test(phone)) {
         return false;
     }
@@ -46,7 +46,7 @@ router.get('/overlap/phone', async function(req, res, next) {
     res.json(responseJson);
 });
 
-router.get('/overlap/nickname', async function(req, res, next) {
+router.get('/overlap/username', async function(req, res, next) {
     const result = await User.findOne({where: {username: req.query.username}});
 
     if(result == null) {
