@@ -59,30 +59,6 @@ router.get('/overlap/nickname', async function(req, res, next) {
     res.json(responseJson);
 });
 
-//encrypt before signup
-router.post('/signup', function(req, res, next) {
-    bcrypt.genSalt(saltRounds, function(err, salt) {
-        if(err) {
-            console.log('bcrypt.genSalt() error : ', err.message);
-            responseJson.result = CODE.UNKNOWN_ERROR;
-            responseJson.detail = err.message;
-            res.json(responseJson);
-        } else {
-            bcrypt.hash(req.body.password, salt, function(err, hash) {
-                if(err) {
-                    console.log('brcypt.hash() error : ', err.message);
-                    responseJson.result = CODE.UNKNOWN_ERROR;
-                    responseJson.detail = err.message;
-                    res.json(responseJson);
-                } else {
-                    req.body.password = hash;
-                    next();
-                }
-            });
-        }
-    });
-});
-
 //signup
 router.post('/signup', async function(req, res, next) {
     try {
@@ -90,7 +66,7 @@ router.post('/signup', async function(req, res, next) {
             console.log(req.body.password);
             const result = await User.create({
                 username: req.body.username,
-                password: req.body.password,
+                password: bcrypt.hashSync(req.body.password, saltRounds),
                 name: req.body.name,
                 phone_number: req.body.phone_number,
             });
