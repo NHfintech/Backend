@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
      return sequelize.define('user', {
-        id: {            
+        id: {
             type: DataTypes.INTEGER,
             allowNull: false,
             unique: true,
@@ -11,14 +11,14 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(45),
             allowNull: false,
             unique: true,
-        }, 
-        password: { 
+        },
+        password: {
+            type: DataTypes.STRING(100),
+            allowNull: false,
+        },
+        name: {
             type: DataTypes.STRING(45),
-            allowNull: false, 
-        }, 
-        name: { 
-            type: DataTypes.STRING(45), 
-            allowNull: false, 
+            allowNull: false,
         },
         phone_number: {
            type: DataTypes.STRING(15),
@@ -29,9 +29,9 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(45),
             allowNull: true,
             unique: true,
-       }, 
+       },
     },
-    { 
-        timestamps:false, 
+    {
+        timestamps:false,
     });
 }
