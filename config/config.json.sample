@@ -6,6 +6,7 @@
         "host": "127.0.0.1",
         "dialect": "mysql",
         "operatorAliases" : false,
-        "logging": false
+        "logging": false,
+        "jwtSecret": "insert jwt secret key"
     }
 }
