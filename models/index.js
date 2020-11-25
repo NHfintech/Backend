@@ -11,6 +11,6 @@ db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 db.User = require('./user')(sequelize, Sequelize);
 db.Event = require('./event')(sequelize, Sequelize);
-db.Event = require('./eventadmin')(sequelize, Sequelize);
+db.EventAdmin = require('./eventadmin')(sequelize, Sequelize);
 
 module.exports = db;
