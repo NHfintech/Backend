@@ -13,7 +13,8 @@ value.code = {
     'PHONE_NUMBER_ALREADY_EXIST': 5,
     'PHONE_NUMBER_INVALID': 6,
     'NAME_INVALID': 7,
-    'UNKNOWN_ERROR': 8,
+    'NO_DATA': 8,
+    'UNKNOWN_ERROR': 9,
 };
 
 value.phoneNumberCheck = function (phone) {
@@ -24,7 +25,7 @@ value.phoneNumberCheck = function (phone) {
     return true;
 };
 
-value.getUser = function (req, res) {
+value.getUser = function (req) {
     if (req.headers && req.headers.authorization) {
         const authorization = req.headers.authorization;
         let decoded = '';
