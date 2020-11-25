@@ -10,9 +10,7 @@ const responseJson = {};
 
 // post1 : check phonenubmer
 router.post('/', async function(req, res, next) {
-    console.log(util.getUser(req, res));
     const eventAdmin = req.body.eventAdmin;
-    console.log(eventAdmin);
     const admin = [];
 
     for(let i = 0; i < eventAdmin.length; i++) {
@@ -43,8 +41,7 @@ router.post('/', async function(req, res, next) {
     try {
         const result = await Event.create(
             {
-                // TODO: user id input 변경하기
-                user_id: 1,
+                user_id: util.getUser(req, res).user.id,
                 category: body.category,
                 title: body.title,
                 location: body.location,
