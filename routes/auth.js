@@ -9,8 +9,8 @@ const config = require(path.join(__dirname, '..', 'config', 'config.json'))[env]
 function jwtSignUser(user) {
     const ONE_WEEK = 60 * 60 * 24 * 7;
     return jwt.sign({data: user}, config.jwtSecret, {
-      expiresIn: ONE_WEEK
-    })
+        expiresIn: ONE_WEEK,
+    });
 }
 
 // function getUser(req, res) {
@@ -28,32 +28,28 @@ function jwtSignUser(user) {
 //     return {detail: 'no header'};
 // }
 
-//TODO : DELETE
+// TODO : DELETE
 router.get('/', function(req, res, next) {
-    let session = req.session;
-    if(session.name)
-    {
-        res.json(session.name)
-    }
-    else{
-        res.json("login fail")
+    const session = req.session;
+    if(session.name) {
+        res.json(session.name);
+    } else{
+        res.json('login fail');
     }
 });
 
-//TODO : change redirect url
+// TODO : change redirect url
 router.post('/login', async function(req, res, next) {
     try {
-
         const {body} = req;
-        const user = await User.findOne({attributes : ['id', 'password'], where : {username : body.username}});
+        const user = await User.findOne({attributes: ['id', 'password'], where: {username: body.username}});
 
         if(user === null) {
-            console.log("cannot find user");
+            console.log('cannot find user');
             res.status(404).json({
-                'detail': 'No user found.'
-            })
-        }
-        else {        
+                'detail': 'No user found.',
+            });
+        } else {
             console.log(user.dataValues);
             const dbPassword = user.dataValues.password;
             const inputPassword = body.password;
@@ -61,36 +57,34 @@ router.post('/login', async function(req, res, next) {
             // TODO: hash salt
             // let salt = user.dataValues.salt;
             // let hashPassword = crypto.createHash("sha512").update(inputPassword + salt).digest("hex");
-            // if(dbPassword === hashPassword){ 
+            // if(dbPassword === hashPassword){
 
-            if(dbPassword === inputPassword){ 
-                console.log("pw correct");        
+            if(dbPassword === inputPassword) {
+                console.log('pw correct');
                 res.json({
                     auth: true,
                     token: jwtSignUser(user),
-                    user: user
-                  });
-            }
-            else {
-                console.log("pw incorrect");
+                    user: user,
+                });
+            } else {
+                console.log('pw incorrect');
                 res.status(401).json({
                     auth: false,
-                    token: null
-                })       
+                    token: null,
+                });
             }
         }
-    }    
-    catch (error) {
-        console.log("Login Error");
+    } catch (error) {
+        console.log('Login Error');
         next(error);
     }
 });
 
-//TODO : change redirect url
-router.get("/logout", function(req,res,next){
+// TODO : change redirect url
+router.get('/logout', function(req, res, next) {
     req.session.destroy();
-    res.clearCookie('sid');  
+    res.clearCookie('sid');
     res.redirect('./');
-})
+});
 
 module.exports = router;

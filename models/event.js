@@ -1,15 +1,15 @@
 module.exports = (sequelize, DataTypes) => {
-     return sequelize.define('event', {
+    return sequelize.define('event', {
         id: {
             type: DataTypes.INTEGER,
             allowNull: false,
             unique: true,
-            autoIncrement : true,
-            primaryKey:true
+            autoIncrement: true,
+            primaryKey: true,
         },
         user_id: {
             type: DataTypes.INTEGER,
-            allowNull: false
+            allowNull: false,
         },
         category: {
             type: DataTypes.STRING(20),
@@ -30,7 +30,7 @@ module.exports = (sequelize, DataTypes) => {
         invitation_url: {
             type: DataTypes.STRING(100),
             allowNull: true,
-            defaultValue: null
+            defaultValue: null,
         },
         start_datetime: {
             type: DataTypes.DATE,
@@ -43,9 +43,9 @@ module.exports = (sequelize, DataTypes) => {
         is_activate: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
-        }
+        },
     },
     {
-        timestamps:false,
+        timestamps: false,
     });
-}
+};

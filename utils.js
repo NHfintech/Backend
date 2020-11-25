@@ -17,6 +17,21 @@ value.phoneNumberCheck = function (phone) {
         return false;
     }
     return true;
-}
+};
+
+value.getUser = function (req, res) {
+    if (req.headers && req.headers.authorization) {
+        const authorization = req.headers.authorization;
+        let decoded = '';
+        try {
+            decoded = jwt.verify(authorization, config.jwtSecret);
+        } catch (e) {
+            return {detail: 'unauthorized'};
+        }
+        return {detail: 'success', user: decoded.data};
+        // Fetch the user by id
+    }
+    return {detail: 'no header'};
+};
 
 module.exports = value;
