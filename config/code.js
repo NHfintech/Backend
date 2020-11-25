@@ -1,0 +1,13 @@
+const CODE = {
+    'SUCCESS': 0,
+    'NO_USER': 1,
+    'INCORRECT_PASSWORD': 2,
+    'USERNAME_ALREADY_EXIST': 3,
+    'USERNAME_INVALID': 4,
+    'PHONE_NUMBER_ALREADY_EXIST': 5,
+    'PHONE_NUMBER_INVALID': 6,
+    'NAME_INVALID': 7,
+    'UNKNOWN_ERROR': 8,
+};
+
+module.exports = CODE;
