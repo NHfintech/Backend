@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-     var event = sequelize.define('event', {
+     return sequelize.define('event', {
         id: {
             type: DataTypes.INTEGER,
             allowNull: false,
@@ -47,11 +47,4 @@ module.exports = (sequelize, DataTypes) => {
     {
         timestamps:false,
     });
-    event.associate = function(models) {
-        event.belongsTo(models.user, {
-            foreignKey : "user_id"
-        })
-    };
-
-    return event;
 }
