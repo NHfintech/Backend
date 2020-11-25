@@ -12,7 +12,7 @@ const usersRouter = require('./routes/users');
 
 // TODO: not use yet
 // const breakdownRouter = require('./routes/breakdown');
-// const eventRouter = require('./routes/event');
+const eventRouter = require('./routes/event');
 // const guestRouter = require('./routes/guest');
 // const organizerRouter  = require('./routes/organizer');
 
