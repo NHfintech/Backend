@@ -10,7 +10,7 @@ const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 
-// TODO: not use yet 
+// TODO: not use yet
 // const breakdownRouter = require('./routes/breakdown');
 // const eventRouter = require('./routes/event');
 // const guestRouter = require('./routes/guest');
@@ -48,7 +48,7 @@ app.use('/', indexRouter);
 app.use('/auth', authRouter);
 app.use('/users', usersRouter);
 // app.use('/breakdown', breakdownRouter);
-// app.use('/event', eventRouter);
+app.use('/event', eventRouter);
 // app.use('/guest', guestRouter);
 // app.use('/organizer', organizerRouter);
 
@@ -60,7 +60,7 @@ app.use(function(err, req, res, next) {
     // set locals, only providing error in development
     res.locals.message = err.message;
     res.locals.error = req.app.get('env') === 'development' ? err : {};
-  
+
     // render the error page
     res.status(err.status || 500);
     res.render('error');

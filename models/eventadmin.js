@@ -9,7 +9,11 @@ module.exports = (sequelize, DataTypes) => {
         },
         user_id: {
             type: DataTypes.INTEGER,
-            allowNull: false
+            allowNull: true
+        },
+        user_phone: {
+           type: DataTypes.STRING(15),
+           allowNull: false,
         },
         event_id: {
             type: DataTypes.INTEGER,
