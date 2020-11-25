@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
         message: {
             type: DataTypes.STRING(100),
             allowNull: false,
-            unique: true,
+            defaultValue: ""
         }
     },
     {

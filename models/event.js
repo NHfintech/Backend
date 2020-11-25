@@ -29,7 +29,8 @@ module.exports = (sequelize, DataTypes) => {
         },
         invitation_url: {
             type: DataTypes.STRING(100),
-            allowNull: false,
+            allowNull: true,
+            defaultValue: null
         },
         start_datetime: {
             type: DataTypes.DATE,
