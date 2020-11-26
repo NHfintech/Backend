@@ -41,7 +41,7 @@ router.post('/', async function(req, res, next) {
             return;
         }
     }
-    req.body.admins = admin;
+    res.locals.admins = admin;
     next();
 });
 
@@ -51,11 +51,12 @@ router.post('/', async function(req, res, next) {
     try {
         const result = await Event.create(
             {
-                user_id: util.getUser(req, res).user.id,
+                user_id: res.locals.user.id,
                 category: body.category,
                 title: body.title,
                 location: body.location,
                 body: body.body,
+                invitation_url: body.invitationUrl,
                 start_datetime: body.startDatetime,
                 end_datetime: body.endDatetime,
                 is_activate: true,
@@ -63,8 +64,8 @@ router.post('/', async function(req, res, next) {
         );
         console.dir(result);
         const eventId = result.dataValues.id;
-        for(let i = 0; i < req.body.admins.length; i++) {
-            req.body.admins[i].event_id = eventId;
+        for(let i = 0; i < res.locals.admins.length; i++) {
+            res.locals.admins[i].event_id = eventId;
         }
         next();
     } catch(exception) {
@@ -77,7 +78,7 @@ router.post('/', async function(req, res, next) {
 
 // post3 : eventadmin insert
 router.post('/', async function(req, res, next) {
-    const admins = req.body.admins;
+    const admins = res.locals.admins;
 
     try {
         const result = await EventAdmin.bulkCreate(admins);
