@@ -8,6 +8,11 @@ const code = util.code;
 
 const responseJson = {};
 
+//TO-DO : Solve Option Problem
+router.options('/', function(req, res) {
+    return res.send({});
+})
+
 router.all('/*', function(req, res, next) {
     const result = util.getUser(req);
     if(result.user === undefined) {
