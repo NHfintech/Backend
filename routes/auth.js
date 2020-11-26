@@ -5,6 +5,7 @@ const {User} = require('../models');
 const path = require('path');
 const env = process.env.NODE_ENV || 'development';
 const config = require(path.join(__dirname, '..', 'config', 'config.json'))[env];
+const bcrypt = require('bcrypt');
 
 function jwtSignUser(user) {
     const ONE_WEEK = 60 * 60 * 24 * 7;
@@ -59,7 +60,7 @@ router.post('/login', async function(req, res, next) {
             // let hashPassword = crypto.createHash("sha512").update(inputPassword + salt).digest("hex");
             // if(dbPassword === hashPassword){
 
-            if(dbPassword === inputPassword) {
+            if(bcrypt.compareSync(inputPassword, dbPassword)) {
                 console.log('pw correct');
                 res.json({
                     auth: true,
