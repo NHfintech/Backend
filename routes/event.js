@@ -11,14 +11,15 @@ const responseJson = {};
 router.all('/*', function(req, res, next) {
     const result = util.getUser(req);
     if(result.user === undefined) {
-        res.status(401).json("no auth");
+        res.status(401).json('no auth');
         return;
     }
     res.locals.user = result.user;
+    console.dir(res.locals.user);
     next();
 });
 
-// post1 : check phonenubmer
+// add post
 router.post('/', async function(req, res, next) {
     const eventAdmin = req.body.eventAdmin;
     const admin = [];
@@ -41,17 +42,12 @@ router.post('/', async function(req, res, next) {
             return;
         }
     }
-    req.body.admins = admin;
-    next();
-});
 
-// post2 : event insert
-router.post('/', async function(req, res, next) {
     const body = req.body;
     try {
         const result = await Event.create(
             {
-                user_id: util.getUser(req, res).user.id,
+                user_id: res.locals.user.id,
                 category: body.category,
                 title: body.title,
                 location: body.location,
@@ -62,32 +58,19 @@ router.post('/', async function(req, res, next) {
             },
         );
         console.dir(result);
+
         const eventId = result.dataValues.id;
-        for(let i = 0; i < req.body.admins.length; i++) {
-            req.body.admins[i].event_id = eventId;
+        for(let i = 0; i < admin.length; i++) {
+            admin[i].event_id = eventId;
         }
-        next();
-    } catch(exception) {
-        console.log(exception);
-        responseJson.result = code.UNKNOWN_ERROR;
-        responseJson.detail = 'unknown error1';
-        res.json(responseJson);
-    }
-});
-
-// post3 : eventadmin insert
-router.post('/', async function(req, res, next) {
-    const admins = req.body.admins;
-
-    try {
-        const result = await EventAdmin.bulkCreate(admins);
+        const result1 = await EventAdmin.bulkCreate(admin);
 
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'success';
     } catch(exception) {
         console.log(exception);
         responseJson.result = code.UNKNOWN_ERROR;
-        responseJson.detail = 'unknown error2';
+        responseJson.detail = 'unknown error';
     } finally {
         res.json(responseJson);
     }
@@ -102,7 +85,7 @@ router.put('/', async function(req, res, next) {
                 title: body.title,
                 location: body.location,
                 body: body.body,
-                invitation_url : body.invitation_url,
+                invitation_url: body.invitation_url,
                 start_datetime: body.startDatetime,
                 end_datetime: body.endDatetime,
             },
@@ -144,16 +127,15 @@ router.delete('/:id', async function(req, res, next) {
 router.get('/:id', async function(req, res, next) {
     try {
         const result = await Event.findOne(
-            {where: {id: req.params.id}}
+            {where: {id: req.params.id}},
         );
 
         if (result === null) {
             responseJson.result = code.NO_DATA;
             responseJson.detail = 'cannot find eventData';
-        }
-        else {
+        } else {
             responseJson.result = code.SUCCESS;
-            responseJson.detail = 'success';            
+            responseJson.detail = 'success';
             responseJson.data = result.dataValues;
         }
     } catch(exception) {
@@ -170,14 +152,14 @@ router.put('/:id', async function(req, res, next) {
     try {
         const result = await Event.update(
             {
-                is_activate : false,
+                is_activate: false,
             },
             {
                 where: {
-                    category : 'asd'
-                    //id: id,
+                    category: 'asd',
+                    // id: id,
                 },
-            }
+            },
         );
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'success';
