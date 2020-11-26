@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 
 const value = {};
 value.code = {
+    'UNKNOWN_ERROR': -1,
     'SUCCESS': 0,
     'NO_USER': 1,
     'INCORRECT_PASSWORD': 2,
@@ -14,7 +15,6 @@ value.code = {
     'PHONE_NUMBER_INVALID': 6,
     'NAME_INVALID': 7,
     'NO_DATA': 8,
-    'UNKNOWN_ERROR': 9,
 };
 
 value.phoneNumberCheck = function (phone) {
