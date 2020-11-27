@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {Event} = require('../models');
-const {User} = require('../models');
-const {EventAdmin} = require('../models');
+const {User, Event, EventAdmin, Guest} = require('../models');
 const util = require('../utils');
 const code = util.code;
 
@@ -147,6 +145,52 @@ router.delete('/:id', async function(req, res, next) {
     }
 });
 
+router.get('/', async function(req, res, next) {
+    try {
+        const is_host = req.query.host;
+        if(typeof is_host === 'undefined') {
+            responseJson.result = code.INVALID_QUERY;
+            responseJson.detail = 'params error';    
+        }
+        else if(is_host === 'true') {
+            const result = await Event.findAll(
+                {
+                    where: {user_id: res.locals.user.id},
+                    order: [
+                        ['is_activate', 'DESC'],
+                        ['end_datetime', 'DESC'],
+                    ],
+                }
+            );
+            responseJson.result = code.SUCCESS;
+            responseJson.detail = 'success';
+            responseJson.data = result;
+        } 
+        else {
+            const result = await Event.findAll({
+                include: [{
+                    model:Guest,
+                    where: { user_id: res.locals.user.id}
+                }],
+                order: [
+                    ['is_activate', 'DESC'],
+                    ['end_datetime', 'DESC'],
+                ]
+            });
+            responseJson.result = code.SUCCESS;
+            responseJson.detail = 'success';            
+            responseJson.data = result;
+        }
+    } catch(exception) {
+        console.log(exception);
+        responseJson.result = code.UNKNOWN_ERROR;
+        responseJson.detail = 'unknown error';
+    } finally {
+        res.json(responseJson);
+    }
+});
+
+
 router.get('/:id', async function(req, res, next) {
     try {
         const result = await Event.findOne(
@@ -180,8 +224,7 @@ router.put('/:id', async function(req, res, next) {
             },
             {
                 where: {
-                    category : 'asd'
-                    //id: id,
+                    id: id,
                 },
             }
         );

@@ -15,6 +15,7 @@ value.code = {
     'PHONE_NUMBER_INVALID': 6,
     'NAME_INVALID': 7,
     'NO_DATA': 8,
+    'INVALID_QUERY': 9
 };
 
 value.phoneNumberCheck = function (phone) {
