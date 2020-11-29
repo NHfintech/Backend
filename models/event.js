@@ -40,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATE,
             allowNull: false,
         },
-        is_activate: {
+        is_activated: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
         },
