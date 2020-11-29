@@ -4,17 +4,16 @@ const {User, Event, EventAdmin, Guest} = require('../models');
 const util = require('../utils');
 const code = util.code;
 
-const responseJson = {};
 
-//TO-DO : Solve Option Problem
+// TO-DO : Solve Option Problem
 router.options('/', function(req, res) {
     return res.send({});
-})
+});
 
 router.all('/*', function(req, res, next) {
     const result = util.getUser(req);
     if(result.user === undefined) {
-        res.status(401).json("no auth");
+        res.status(401).json('no auth');
         return;
     }
     res.locals.user = result.user;
@@ -23,6 +22,7 @@ router.all('/*', function(req, res, next) {
 
 // post1 : check phonenubmer
 router.post('/', async function(req, res, next) {
+    const responseJson = {};
     const eventAdmin = req.body.eventAdmin;
     const admin = [];
 
@@ -33,9 +33,9 @@ router.post('/', async function(req, res, next) {
             );
 
             if(adminResult == null) {
-                admin.push({id: null, user_phone: eventAdmin[i]});
+                admin.push({user_id: null, user_phone: eventAdmin[i]});
             } else {
-                admin.push({id: adminResult.id, user_phone: eventAdmin[i]});
+                admin.push({user_id: adminResult.id, user_phone: eventAdmin[i]});
             }
         } else {
             responseJson.result = code.PHONE_NUMBER_INVALID;
@@ -50,6 +50,7 @@ router.post('/', async function(req, res, next) {
 
 // post2 : event insert
 router.post('/', async function(req, res, next) {
+    const responseJson = {};
     const body = req.body;
     try {
         const result = await Event.create(
@@ -81,6 +82,7 @@ router.post('/', async function(req, res, next) {
 
 // post3 : eventadmin insert
 router.post('/', async function(req, res, next) {
+    const responseJson = {};
     const admins = res.locals.admins;
 
     try {
@@ -98,6 +100,7 @@ router.post('/', async function(req, res, next) {
 });
 
 router.put('/', async function(req, res, next) {
+    const responseJson = {};
     const body = req.body;
 
     try {
@@ -106,7 +109,7 @@ router.put('/', async function(req, res, next) {
                 title: body.title,
                 location: body.location,
                 body: body.body,
-                invitation_url : body.invitation_url,
+                invitation_url: body.invitation_url,
                 start_datetime: body.startDatetime,
                 end_datetime: body.endDatetime,
             },
@@ -126,6 +129,7 @@ router.put('/', async function(req, res, next) {
 });
 
 router.delete('/:id', async function(req, res, next) {
+    const responseJson = {};
     try {
         const result = await Event.destroy(
             {where: {id: req.params.id}},
@@ -146,13 +150,13 @@ router.delete('/:id', async function(req, res, next) {
 });
 
 router.get('/', async function(req, res, next) {
+    const responseJson = {};
     try {
         const is_host = req.query.host;
         if(typeof is_host === 'undefined') {
             responseJson.result = code.INVALID_QUERY;
             responseJson.detail = 'params error';    
-        }
-        else if(is_host === 'true') {
+        } else if(is_host === 'true') {
             const result = await Event.findAll(
                 {
                     where: {user_id: res.locals.user.id},
@@ -160,22 +164,21 @@ router.get('/', async function(req, res, next) {
                         ['is_activate', 'DESC'],
                         ['end_datetime', 'DESC'],
                     ],
-                }
+                },
             );
             responseJson.result = code.SUCCESS;
             responseJson.detail = 'success';
             responseJson.data = result;
-        } 
-        else {
+        } else {
             const result = await Event.findAll({
                 include: [{
-                    model:Guest,
-                    where: { user_id: res.locals.user.id}
+                    model: Guest,
+                    where: {user_id: res.locals.user.id},
                 }],
                 order: [
                     ['is_activate', 'DESC'],
                     ['end_datetime', 'DESC'],
-                ]
+                ],
             });
             responseJson.result = code.SUCCESS;
             responseJson.detail = 'success';            
@@ -192,16 +195,16 @@ router.get('/', async function(req, res, next) {
 
 
 router.get('/:id', async function(req, res, next) {
+    const responseJson = {};
     try {
         const result = await Event.findOne(
-            {where: {id: req.params.id}}
+            {where: {id: req.params.id}},
         );
 
         if (result === null) {
             responseJson.result = code.NO_DATA;
             responseJson.detail = 'cannot find eventData';
-        }
-        else {
+        } else {
             responseJson.result = code.SUCCESS;
             responseJson.detail = 'success';            
             responseJson.data = result.dataValues;
@@ -216,17 +219,18 @@ router.get('/:id', async function(req, res, next) {
 
 // event close
 router.put('/:id', async function(req, res, next) {
+    const responseJson = {};
     const id = req.params.id;
     try {
         const result = await Event.update(
             {
-                is_activate : false,
+                is_activate: false,
             },
             {
                 where: {
                     id: id,
                 },
-            }
+            },
         );
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'success';
