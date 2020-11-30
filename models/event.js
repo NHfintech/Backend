@@ -37,11 +37,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             defaultValue: null,
         },
-        start_datetime: {
-            type: DataTypes.DATE,
-            allowNull: false,
-        },
-        end_datetime: {
+        event_datetime: {
             type: DataTypes.DATE,
             allowNull: false,
         },
