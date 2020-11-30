@@ -4,8 +4,6 @@ const bcrypt = require('bcrypt');
 const {User, Event, EventAdmin, Guest} = require('../models');
 const util = require('../utils');
 const code = util.code;
-const moment = require('moment');
-require('moment-timezone');
 
 
 masterCheck = async function(userId, eventId) {
@@ -72,9 +70,8 @@ router.post('/', async function(req, res, next) {
     const responseJson = {};
     const body = req.body;
     try {
-        moment.tz.setDefault('Asia/Seoul');
-        const time = moment().format('YYYY-MM-DD HH:mm:ss');
-        const eventHash = bcrypt.hashSync(Math.random().toString(36).slice(2), util.saltRounds);
+        const secretValue = Math.random().toString(36).slice(2) + res.locals.user.id + body.title;
+        const eventHash = bcrypt.hashSync(secretValue, util.saltRounds);
 
         const result = await Event.create(
             {
@@ -85,8 +82,7 @@ router.post('/', async function(req, res, next) {
                 location: body.location,
                 body: body.body,
                 invitation_url: body.invitationUrl,
-                start_datetime: time,
-                end_datetime: body.endDatetime,
+                event_datetime: body.eventDatetime,
                 is_activated: true,
             },
         );
