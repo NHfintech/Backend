@@ -16,7 +16,7 @@ value.code = {
     'NAME_INVALID': 7,
     'NO_DATA': 8,
     'INVALID_QUERY': 9,
-    'NO_AUTH': 10
+    'NO_AUTH': 10,
 };
 
 value.phoneNumberCheck = function (phone) {
@@ -33,7 +33,8 @@ value.getUser = function (req) {
         let decoded = '';
         try {
             decoded = jwt.verify(authorization, config.jwtSecret);
-        } catch (e) {
+        }
+        catch (e) {
             return {detail: 'unauthorized'};
         }
         return {detail: 'success', user: decoded.data};
@@ -41,5 +42,7 @@ value.getUser = function (req) {
     }
     return {detail: 'no header'};
 };
+
+value.saltRounds = 10;
 
 module.exports = value;
