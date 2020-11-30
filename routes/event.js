@@ -129,8 +129,8 @@ router.post('/', async function(req, res, next) {
 router.put('/:id', async function(req, res, next) {
     const responseJson = {};
     const body = req.body;
-    const userId = req.params.id;
-    const eventId = body.id;
+    const userId = res.locals.user.id;
+    const eventId = req.params.id;
 
     try {
         if(await masterCheck(userId, eventId)) {
@@ -144,7 +144,7 @@ router.put('/:id', async function(req, res, next) {
                 },
                 {
                     where: {
-                        id: body.id,
+                        id: eventId,
                     }},
             );
             responseJson.result = code.SUCCESS;
