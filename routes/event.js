@@ -5,6 +5,20 @@ const util = require('../utils');
 const code = util.code;
 
 
+masterCheck = async function(userId, eventId) {
+    const check = await Event.findOne({
+        where: {user_id: userId, id: eventId}
+    });    
+    return check !== null;
+}
+
+guestCheck = async function(userId, eventId) {
+    const check = await Guest.findOne({
+        where: {user_id: userId, event_id: eventId}
+    });
+    return check !== null;
+}
+
 // TO-DO : Solve Option Problem
 router.options('/', function(req, res) {
     return res.send({});
@@ -193,47 +207,78 @@ router.get('/', async function(req, res, next) {
     }
 });
 
-
 router.get('/:id', async function(req, res, next) {
     const responseJson = {};
+    const myId = res.locals.user.id;
     try {
+        const eventId = req.params.id;
         const result = await Event.findOne(
-            {where: {id: req.params.id}},
+            {where: {id: eventId}},
         );
 
         if (result === null) {
             responseJson.result = code.NO_DATA;
             responseJson.detail = 'cannot find eventData';
         } else {
-            responseJson.result = code.SUCCESS;
-            responseJson.detail = 'success';            
-            responseJson.data = result.dataValues;
+            
+            let haveAuth = result.dataValues.user_id === myId;
+            if(!haveAuth) {
+                if(await guestCheck(myId,eventId)) {
+                    haveAuth = true;
+                }
+            }
+            if(haveAuth) {
+                const data = result.dataValues;
+                const result2 = await EventAdmin.findAll(
+                    {
+                        attributes: ['user_phone'],
+                        where: {event_id: eventId}
+                    },
+                );
+                data.eventAdmin = result2;
+                responseJson.result = code.SUCCESS;
+                responseJson.detail = 'success';            
+                responseJson.data = data;
+            }
+            else {
+                responseJson.result = code.NO_AUTH;
+                responseJson.detail = 'no_auth'
+            }
         }
     } catch(exception) {
         responseJson.result = code.UNKNOWN_ERROR;
         responseJson.detail = 'unknown error';
+        console.log(exception);
     } finally {
         res.json(responseJson);
     }
 });
 
+
+
 // event close
-router.put('/:id', async function(req, res, next) {
+router.put('/close/:id', async function(req, res, next) {
     const responseJson = {};
-    const id = req.params.id;
+    const eventId = req.params.id;    
+    const myId = res.locals.user.id;
     try {
-        const result = await Event.update(
-            {
-                is_activate: false,
-            },
-            {
-                where: {
-                    id: id,
+        if(await masterCheck(myId, eventId)) {
+            const result = await Event.update(
+                {
+                    is_activated: false,
                 },
-            },
-        );
-        responseJson.result = code.SUCCESS;
-        responseJson.detail = 'success';
+                {
+                    where: {
+                        id: eventId,
+                    },
+                },
+            );
+            responseJson.result = code.SUCCESS;
+            responseJson.detail = 'success';
+        } else {
+            responseJson.result = code.NO_AUTH;
+            responseJson.detail = 'no_auth'
+        }
     } catch(exception) {
         console.log(exception);
         responseJson.result = code.UNKNOWN_ERROR;
