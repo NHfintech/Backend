@@ -136,8 +136,8 @@ router.put('/:id', async function(req, res, next) {
                     title: body.title,
                     location: body.location,
                     body: body.body,
-                    invitation_url: body.invitation_url,
-                    end_datetime: body.endDatetime,
+                    invitation_url: body.invitationUrl,
+                    event_datetime: body.eventDatetime,
                 },
                 {
                     where: {
@@ -198,7 +198,7 @@ router.get('/', async function(req, res, next) {
                     where: {user_id: res.locals.user.id},
                     order: [
                         ['is_activated', 'DESC'],
-                        ['end_datetime', 'DESC'],
+                        ['event_datetime', 'DESC'],
                     ],
                 },
             );
@@ -214,7 +214,7 @@ router.get('/', async function(req, res, next) {
                 }],
                 order: [
                     ['is_activated', 'DESC'],
-                    ['end_datetime', 'DESC'],
+                    ['event_datetime', 'DESC'],
                 ],
             });
             responseJson.result = code.SUCCESS;
