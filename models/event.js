@@ -9,6 +9,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         event_hash: {
             type: DataTypes.STRING(100),
+            unique: true,
             allowNull: false,
         },
         user_id: {
