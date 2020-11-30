@@ -21,7 +21,7 @@ guestCheck = async function(userId, eventId) {
 };
 
 // TO-DO : Solve Option Problem
-router.options('/', function(req, res) {
+router.options('/*', function(req, res) {
     return res.send({});
 });
 
@@ -86,7 +86,7 @@ router.post('/', async function(req, res, next) {
                 is_activated: true,
             },
         );
-        console.dir(result);
+        res.locals.eventId = result.dataValues.id;
         const eventId = result.dataValues.id;
         for(let i = 0; i < res.locals.admins.length; i++) {
             res.locals.admins[i].event_id = eventId;
@@ -111,6 +111,7 @@ router.post('/', async function(req, res, next) {
 
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'success';
+        responseJson.data = {id: res.locals.eventId};
     }
     catch(exception) {
         console.log(exception);
