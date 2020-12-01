@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const {User, Event, EventAdmin, Guest} = require('../models');
 const util = require('../utils');
 const code = util.code;
@@ -71,11 +71,10 @@ router.post('/', async function(req, res, next) {
     const body = req.body;
     try {
         const secretValue = Math.random().toString(36).slice(2) + res.locals.user.id + body.title;
-        const eventHash = bcrypt.hashSync(secretValue, util.saltRounds);
-
+        const encrypt = crypto.createHash('sha256').update(secretValue).digest('hex');
         const result = await Event.create(
             {
-                event_hash: eventHash,
+                event_hash: encrypt,
                 user_id: res.locals.user.id,
                 category: body.category,
                 title: body.title,
