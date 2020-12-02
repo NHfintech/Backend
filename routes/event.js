@@ -70,11 +70,8 @@ router.post('/', async function(req, res, next) {
     const responseJson = {};
     const body = req.body;
     try {
-        const secretValue = Math.random().toString(36).slice(2) + res.locals.user.id + body.title;
-        const encrypt = crypto.createHash('sha256').update(secretValue).digest('hex');
         const result = await Event.create(
             {
-                event_hash: encrypt,
                 user_id: res.locals.user.id,
                 category: body.category,
                 title: body.title,
