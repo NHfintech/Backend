@@ -1,7 +1,7 @@
 const path = require('path');
 const Sequelize = require('sequelize');
 const env = process.env.NODE_ENV || 'development';
-const config = require(path.join(__dirname, '..', 'config', 'config.json'))[env];
+const config = require(path.join(__dirname, '..', 'config', 'config.json'))[env]['dbOptions'];
 
 const db = {};
 
@@ -13,6 +13,7 @@ db.User = require('./user')(sequelize, Sequelize);
 db.Event = require('./event')(sequelize, Sequelize);
 db.EventAdmin = require('./eventadmin')(sequelize, Sequelize);
 db.Guest = require('./guest')(sequelize, Sequelize);
+db.BreakDown = require('./breakdown')(sequelize, Sequelize);
 
 db.Event.hasMany(db.Guest, {foreignKey: {name: 'event_id'}});
 module.exports = db;
