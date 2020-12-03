@@ -1,12 +1,22 @@
 { 
-    "development": { 
-        "username": "root",
-        "password": "1234",
-        "database": "nh_db",
-        "host": "127.0.0.1",
-        "dialect": "mysql",
-        "operatorAliases" : false,
-        "logging": false,
-        "jwtSecret": "insert jwt secret key"
+    "development": {
+        "dbOptions": {
+            "username": "root",
+            "password": "1234",
+            "database": "nh_db",
+            "host": "127.0.0.1",
+            "dialect": "mysql",
+            "operatorAliases" : false,
+            "dialectOptions": {
+                "dateStrings": true,
+                "typeCast": true
+            },
+            "timezone": "+09:00",
+            "logging": false
+        },
+        "jwtSecret": "insert jwt secret key",
+        "iscd": "기관코드",
+        "accessToken": "액세스 토큰",
+        "BrdtBrno": "생년월일 or 사업자번호"
     }
 }

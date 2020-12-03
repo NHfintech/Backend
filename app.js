@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const session = require('express-session');
 const sequelize = require('./models').sequelize;
+const util = require('./utils');
 
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
@@ -13,6 +14,8 @@ const usersRouter = require('./routes/users');
 // TODO: not use yet
 // const breakdownRouter = require('./routes/breakdown');
 const eventRouter = require('./routes/event');
+const finRouter = require('./routes/fin');
+
 // const guestRouter = require('./routes/guest');
 // const organizerRouter  = require('./routes/organizer');
 
@@ -47,8 +50,23 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/auth', authRouter);
 app.use('/users', usersRouter);
-// app.use('/breakdown', breakdownRouter);
+
+//auth check
+app.use('/*', function(req, res, next) {
+    if(req.method === 'options') {
+        return next();
+    }
+    const result = util.getUser(req);
+    if(result.user === undefined) {
+        res.status(401).json('no auth');
+        return;
+    }
+    res.locals.user = result.user;
+    next();
+});
 app.use('/event', eventRouter);
+app.use('/fin', finRouter);
+// app.use('/breakdown', breakdownRouter);
 // app.use('/guest', guestRouter);
 // app.use('/organizer', organizerRouter);
 

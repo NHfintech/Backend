@@ -17,6 +17,8 @@ value.code = {
     'NO_DATA': 8,
     'INVALID_QUERY': 9,
     'NO_AUTH': 10,
+    'NH_API_ERROR': 11,
+    'DB_ERROR': 12,
 };
 
 value.phoneNumberCheck = function (phone) {

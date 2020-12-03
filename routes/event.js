@@ -20,21 +20,6 @@ guestCheck = async function(userId, eventId) {
     return check !== null;
 };
 
-// TO-DO : Solve Option Problem
-router.options('/*', function(req, res) {
-    return res.send({});
-});
-
-router.all('/*', function(req, res, next) {
-    const result = util.getUser(req);
-    if(result.user === undefined) {
-        res.status(401).json('no auth');
-        return;
-    }
-    res.locals.user = result.user;
-    next();
-});
-
 // post1 : check phonenubmer
 router.post('/', async function(req, res, next) {
     const responseJson = {};
