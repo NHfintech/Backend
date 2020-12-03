@@ -72,6 +72,18 @@ router.post('/', async function(req, res, next) {
         for(let i = 0; i < res.locals.admins.length; i++) {
             res.locals.admins[i].event_id = eventId;
         }
+
+        const encrypt = crypto.createHash('sha256').update(eventId + ' ').digest('hex');
+
+        const updateResult = await Event.update(
+            {
+                event_hash: encrypt,
+            },
+            {
+                where: {
+                    id: eventId,
+                }},
+        );
         next();
     }
     catch(exception) {
