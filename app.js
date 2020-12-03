@@ -53,7 +53,7 @@ app.use('/users', usersRouter);
 
 //auth check
 app.use('/*', function(req, res, next) {
-    if(req.method === 'options') {
+    if(req.method === 'OPTIONS') {
         return next();
     }
     const result = util.getUser(req);
