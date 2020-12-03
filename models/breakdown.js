@@ -22,6 +22,7 @@ module.exports = (sequelize, DataTypes) => {
         message: {
             type: DataTypes.STRING(45),
             allowNull: true,
+            defaultValue: null
         },
         money: {
             type: DataTypes.INTEGER,
@@ -30,6 +31,7 @@ module.exports = (sequelize, DataTypes) => {
         is_direct_input: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
+            defaultValue: false
         },
     },
     {
