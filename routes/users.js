@@ -96,4 +96,33 @@ router.post('/signup', async function(req, res, next) {
     }
 });
 
+router.put('/:id/token', async function(req, res, next) {
+    const responseJson = {};
+    try {
+        const token = req.body.token;
+        console.dir(req.body);
+        const result = User.update(
+            {
+                firebase_token: token,
+            },
+            {
+                where: {
+                    id: req.params.id,
+                },
+            },
+        );
+
+        responseJson.result = code.SUCCESS;
+        responseJson.detail = 'update firebase token success';
+        responseJson.data = result;
+    }
+    catch(exception) {
+        responseJson.result = code.UNKNOWN_ERROR;
+        responseJson.detail = 'unknown error';
+    }
+    finally {
+        res.json(responseJson);
+    }
+});
+
 module.exports = router;
