@@ -51,7 +51,7 @@ app.use('/', indexRouter);
 app.use('/auth', authRouter);
 app.use('/users', usersRouter);
 
-//auth check
+// auth check
 app.use('/*', function(req, res, next) {
     if(req.method === 'OPTIONS') {
         return next();
