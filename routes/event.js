@@ -20,6 +20,13 @@ guestCheck = async function(userId, eventId) {
     return check !== null;
 };
 
+adminCheck = async function(userId, eventId) {
+    const check = await EventAdmin.findOne({
+        where: {user_id: userId, event_id: eventId},
+    });
+    return check !== null;
+};
+
 // post1 : check phonenubmer
 router.post('/', async function(req, res, next) {
     const responseJson = {};
@@ -72,9 +79,8 @@ router.post('/', async function(req, res, next) {
         for(let i = 0; i < res.locals.admins.length; i++) {
             res.locals.admins[i].event_id = eventId;
         }
-
         const encrypt = crypto.createHash('sha256').update(eventId + ' ').digest('hex');
-
+        
         const updateResult = await Event.update(
             {
                 event_hash: encrypt,
@@ -186,7 +192,7 @@ router.get('/', async function(req, res, next) {
             responseJson.detail = 'params error';    
         }
         else if(isHost === 'true') {
-            const result = await Event.findAll(
+            const result1 = await Event.findAll(
                 {
                     where: {user_id: res.locals.user.id},
                     order: [
@@ -195,6 +201,39 @@ router.get('/', async function(req, res, next) {
                     ],
                 },
             );
+            const result2 = await Event.findAll({
+                include: [{
+                    model: EventAdmin,
+                    where: {user_id: res.locals.user.id}
+                }],
+                order: [
+                    ['is_activated', 'DESC'],
+                    ['event_datetime', 'DESC'],
+                ],
+            });
+            const result=[];
+            for(let i = 0; i < result1.length; i++) {
+                result.push(result1[i].dataValues);
+            }
+            for(let i = 0; i < result2.length; i++) {
+                result.push(result2[i].dataValues);
+            }
+            result.sort(function(a,b) {
+                if(a.is_activated >= b.is_activated) {
+                    if(a.event_datetime > b.event_datetime) {
+                        return -1;
+                    }
+                    else if(a.event_datetime === b.event_datetime) {
+                        return 0;
+                    }
+                    else {
+                        return 1;
+                    }
+                }
+                else {
+                    return 1;
+                }
+            })
             responseJson.result = code.SUCCESS;
             responseJson.detail = 'success';
             responseJson.data = result;
@@ -240,11 +279,7 @@ router.get('/:id', async function(req, res, next) {
         }
         else {
             let haveAuth = result.dataValues.user_id === myId;
-            if(!haveAuth) {
-                if(await guestCheck(myId, eventId)) {
-                    haveAuth = true;
-                }
-            }
+            haveAuth = haveAuth || await adminCheck(myId, eventId) || await guestCheck(myId, eventId);
             if(haveAuth) {
                 const data = result.dataValues;
                 const result2 = await EventAdmin.findAll(
