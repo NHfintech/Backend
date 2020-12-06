@@ -309,8 +309,6 @@ router.get('/:id', async function(req, res, next) {
     }
 });
 
-
-
 // event close
 router.put('/close/:id', async function(req, res, next) {
     const responseJson = {};
@@ -340,6 +338,53 @@ router.put('/close/:id', async function(req, res, next) {
         console.log(exception);
         responseJson.result = code.UNKNOWN_ERROR;
         responseJson.detail = 'unknown error';
+    }
+    finally {
+        res.json(responseJson);
+    }
+});
+
+router.get('/invite/:hash', async function(req, res, next) {
+    const responseJson = {};
+    const myId = res.locals.user.id;
+    try {
+        const hostId = req.query.hostId;
+        const hash = req.params.hash;
+
+        const result = await Event.findOne({
+            attributes: ['id'],
+            where: {event_hash: hash}
+        });
+        const eventId = result.dataValues.id;
+
+        if (result === null) {
+            responseJson.result = code.NO_DATA;
+            responseJson.detail = 'cannot find event_hash';
+        }
+        else {
+            const hostCheck = await masterCheck(hostId, eventId) || await adminCheck(hostId, eventId);
+            if(hostCheck) {
+                const result2 = await Guest.create(
+                    {
+                        user_id: myId,
+                        event_id: eventId,
+                        eventAdmin_id: hostId
+                    },
+                );
+                responseJson.result = code.SUCCESS;
+                responseJson.detail = 'success';
+                responseJson.data = {event_id : eventId};
+            }
+            else {
+                responseJson.result = code.NO_AUTH;
+                responseJson.detail = 'no_auth : hostId is not valid';
+            }
+        }
+    }
+    catch(exception) {
+        responseJson.result = code.UNKNOWN_ERROR;
+        responseJson.detail = 'unknown error';
+        console.log(exception);
     }
     finally {
         res.json(responseJson);
