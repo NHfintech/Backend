@@ -50,6 +50,7 @@ router.get('/event/:eventId', async function(req, res, next) {
                 temp.money = breakdowns[j].money;
                 temp.message = breakdowns[j].message;
                 temp.transfer_datetime = breakdowns[j].transfer_datetime;
+                temp.isDirectInput = false;
 
                 list.push(temp);
             }

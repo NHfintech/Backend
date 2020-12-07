@@ -184,11 +184,13 @@ router.post('/transfer', async function(req, res, next) {
             responseJson.detail = result.data.Header.Rsms;
             res.json(responseJson);
         }
-        const time = result.data.Header.Tsymd + result.data.Header.Trtm;
-        res.locals.transferTime = time.replace(
-            /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/,
-            '$1-$2-$3 $4:$5:$6');
-        next();
+        else {
+            const time = result.data.Header.Tsymd + result.data.Header.Trtm;
+            res.locals.transferTime = time.replace(
+                /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/,
+                '$1-$2-$3 $4:$5:$6');
+            next();
+        }
     }
     catch (error) {
         responseJson.result = code.NH_API_ERROR;
@@ -220,7 +222,7 @@ router.post('/transfer', async function(req, res, next) {
         const result = await BreakDown.create(data);
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'transfer success';
-        responseJson.data = { event_id: eventId};
+        responseJson.data = {event_id: eventId};
         res.json(responseJson);
     }
     catch (error) {

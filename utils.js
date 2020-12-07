@@ -9,7 +9,7 @@ const value = {};
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    databaseURL: 'https://kkotgil-bdb2e.firebaseio.com'
+    databaseURL: 'https://kkotgil-bdb2e.firebaseio.com',
 });
 
 value.code = {
