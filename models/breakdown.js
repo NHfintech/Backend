@@ -14,6 +14,11 @@ module.exports = (sequelize, DataTypes) => {
         sender_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
+            defaultValue: 0,
+        },
+        sender_name: {
+            type: DataTypes.STRING(20),
+            allowNull: true,
         },
         transfer_datetime: {
             type: DataTypes.DATE,
