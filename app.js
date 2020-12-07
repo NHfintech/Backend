@@ -12,7 +12,7 @@ const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 
 // TODO: not use yet
-// const breakdownRouter = require('./routes/breakdown');
+const breakdownRouter = require('./routes/breakdown');
 const eventRouter = require('./routes/event');
 const finRouter = require('./routes/fin');
 
@@ -66,7 +66,7 @@ app.use('/*', function(req, res, next) {
 });
 app.use('/event', eventRouter);
 app.use('/fin', finRouter);
-// app.use('/breakdown', breakdownRouter);
+app.use('/breakdown', breakdownRouter);
 // app.use('/guest', guestRouter);
 // app.use('/organizer', organizerRouter);
 
