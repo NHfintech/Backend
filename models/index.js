@@ -17,4 +17,7 @@ db.BreakDown = require('./breakdown')(sequelize, Sequelize);
 
 db.Event.hasMany(db.Guest, {foreignKey: {name: 'event_id'}});
 db.Event.hasMany(db.EventAdmin, {foreignKey: {name: 'event_id'}});
+db.Event.hasMany(db.BreakDown, {foreignKey: {name: 'event_id'}});
+db.User.hasMany(db.BreakDown, {foreignKey: {name: 'sender_id'}});
+
 module.exports = db;
