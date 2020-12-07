@@ -5,6 +5,7 @@ const env = process.env.NODE_ENV || 'development';
 const config = require(path.join(__dirname, '..', 'config', 'config.json'))[env];
 const moment = require('moment');
 const axios = require('axios');
+const sequelize = require('sequelize');
 
 const {User, Event, BreakDown} = require('../models');
 const util = require('../utils');
@@ -76,7 +77,7 @@ router.post('/', async function(req, res, next) {
         const apiNm = 'CheckOpenFinAccountDirect';
         const body = {
             'Rgno': rgno,
-            'BrdtBrno': config.BrdtBrno, 
+            'BrdtBrno': config.BrdtBrno,
         };
         body.Header= createBodyHeader(apiNm, userId);
         const result = await axios.post(getNHURL(apiNm), body);
@@ -155,7 +156,7 @@ router.post('/transfer', async function(req, res, next) {
             return;
         }
         res.locals.finAccount = result2.dataValues.fin_account;
-        next();        
+        next();
     }
     catch (error) {
         responseJson.result = code.DB_ERROR;
@@ -175,8 +176,8 @@ router.post('/transfer', async function(req, res, next) {
             'Tram': tram,
             'DractOtlt': '부조금 출금',
         };
-        
-        body.Header= createBodyHeader(apiNm, userId);        
+
+        body.Header= createBodyHeader(apiNm, userId);
         const result = await axios.post(getNHURL(apiNm), body);
         if(result.data.Header.Rpcd !== '00000') {
             responseJson.result = code.NH_API_ERROR;
@@ -228,4 +229,91 @@ router.post('/transfer', async function(req, res, next) {
         res.json(responseJson);
     }
 });
+
+// check event hash
+router.post('/receive', async function(req, res, next) {
+    const responseJson = {};
+    const {event_hash} = req.body;
+
+    try {
+        const result = await Event.findOne(
+            {
+                where: {
+                    event_hash: event_hash,
+                },
+            },
+        );
+
+        if(result == null) {
+            responseJson.result = code.NO_DATA;
+            responseJson.detail = 'not valid event hash';
+            res.json(responseJson);
+            return;
+        }
+
+        if(result.dataValues.user_id !== res.locals.user.id) {
+            responseJson.result = code.NO_AUTH;
+            responseJson.detail = 'no auth';
+            res.json(responseJson);
+            return;
+        }
+
+        res.locals.eventId = result.dataValues.id;
+        res.locals.title = result.dataValues.title;
+        next();
+    }
+    catch(exception) {
+        responseJson.result = code.UNKNOWN_ERROR;
+        responseJson.detail = 'Unknown Error';
+        res.json(responseJson);
+    }
+});
+
+// nh api
+router.post('/receive', async function(req, res, next) {
+    const responseJson = {};
+    const {bncd, acno} = req.body;
+
+    try {
+        const result = await BreakDown.findAll(
+            {
+                attributes: [
+                    'event_id',
+                    [sequelize.fn('sum', sequelize.col('money')), 'totalMoney'],
+                ],
+                group: ['event_id'],
+            },
+            {
+                where: {
+                    event_id: res.locals.eventId,
+                    is_direct_input: false,
+                },
+            },
+        );
+        const tram = result[0].dataValues.totalMoney;
+
+        const apiNm = 'ReceivedTransferAccountNumber';
+        const body = {
+            'Bncd': bncd,
+            'Acno': acno,
+            'Tram': tram,
+            'DractOtlt': res.locals.title + ' 정산금',
+            'MractOtlt': res.locals.title + ' 정산금',
+        };
+
+        body.Header = createBodyHeader(apiNm, res.locals.user.id);
+
+        const nhResult = await axios.post(getNHURL(apiNm), body);
+        responseJson.result = code.SUCCESS;
+        responseJson.detail = 'receive success';
+    }
+    catch(exception) {
+        responseJson.result = code.NH_API_ERROR;
+        responseJson.detail = 'nh api( ReceivedTransferAccountNumber ) error';
+    }
+    finally {
+        res.json(responseJson);
+    }
+});
+
 module.exports = router;
