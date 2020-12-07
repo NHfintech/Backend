@@ -204,7 +204,7 @@ router.get('/', async function(req, res, next) {
             const result2 = await Event.findAll({
                 include: [{
                     model: EventAdmin,
-                    where: {user_id: res.locals.user.id}
+                    where: {user_id: res.locals.user.id},
                 }],
                 order: [
                     ['is_activated', 'DESC'],
@@ -218,7 +218,7 @@ router.get('/', async function(req, res, next) {
             for(let i = 0; i < result2.length; i++) {
                 result.push(result2[i].dataValues);
             }
-            result.sort(function(a,b) {
+            result.sort(function(a, b) {
                 if(a.is_activated >= b.is_activated) {
                     if(a.event_datetime > b.event_datetime) {
                         return -1;
@@ -233,7 +233,7 @@ router.get('/', async function(req, res, next) {
                 else {
                     return 1;
                 }
-            })
+            });
             responseJson.result = code.SUCCESS;
             responseJson.detail = 'success';
             responseJson.data = result;
@@ -353,7 +353,7 @@ router.get('/invite/:hash', async function(req, res, next) {
 
         const result = await Event.findOne({
             attributes: ['id'],
-            where: {event_hash: hash}
+            where: {event_hash: hash},
         });
         const eventId = result.dataValues.id;
 
@@ -368,12 +368,12 @@ router.get('/invite/:hash', async function(req, res, next) {
                     {
                         user_id: myId,
                         event_id: eventId,
-                        eventAdmin_id: hostId
+                        eventAdmin_id: hostId,
                     },
                 );
                 responseJson.result = code.SUCCESS;
                 responseJson.detail = 'success';
-                responseJson.data = {event_id : eventId};
+                responseJson.data = {event_id: eventId};
             }
             else {
                 responseJson.result = code.NO_AUTH;
