@@ -219,6 +219,7 @@ router.post('/transfer', async function(req, res, next) {
         const result = await BreakDown.create(data);
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'transfer success';
+        responseJson.data = { event_id: eventId};
         res.json(responseJson);
     }
     catch (error) {
