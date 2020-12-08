@@ -16,7 +16,7 @@ masterCheck = async function(userId, eventId) {
 router.get('/event/:eventId', async function(req, res, next) {
     const responseJson = {};
     const eventId = req.params.eventId;
-    if(!masterCheck(res.locals.user.id, eventId)) {
+    if(!await masterCheck(res.locals.user.id, eventId)) {
         responseJson.result = code.NO_AUTH;
         responseJson.detail = 'no auth';
         res.json(responseJson);
@@ -146,7 +146,7 @@ router.get('/sender', async function(req, res, next) {
 router.post('/', async function(req, res, next) {
     const responseJson = {};
     const {name, eventId, money} = req.body;
-    if(!masterCheck(res.locals.user.id, eventId)) {
+    if(!await masterCheck(res.locals.user.id, eventId)) {
         responseJson.result = code.NO_AUTH;
         responseJson.detail = 'no auth';
         res.json(responseJson);
@@ -170,6 +170,41 @@ router.post('/', async function(req, res, next) {
     }
     catch(exception) {
         console.log(exception);
+        responseJson.result = code.UNKNOWN_ERROR;
+        responseJson.detail = 'unknown error';
+    }
+    finally {
+        res.json(responseJson);
+    }
+});
+
+router.delete('/:id/:eventId', async function(req, res, next) {
+    const responseJson = {};
+    if(!await masterCheck(res.locals.user.id, req.params.eventId)) {
+        responseJson.result = code.NO_AUTH;
+        responseJson.detail = 'no auth';
+        res.json(responseJson);
+        return;
+    }
+    try {
+        const result = await BreakDown.destroy(
+            {
+                where: {
+                    id: req.params.id,
+                    is_direct_input: true,
+                },
+            },
+        );
+        if(result === 0) {
+            responseJson.result = code.NO_DATA;
+            responseJson.detail = 'no direct input, or no data';
+        }
+        else if(result === 1) {
+            responseJson.result = code.SUCCESS;
+            responseJson.detail = 'success';
+        }
+    }
+    catch(exception) {
         responseJson.result = code.UNKNOWN_ERROR;
         responseJson.detail = 'unknown error';
     }

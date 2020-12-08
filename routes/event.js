@@ -74,13 +74,16 @@ router.post('/', async function(req, res, next) {
                 is_activated: true,
             },
         );
-        res.locals.eventId = result.dataValues.id;
         const eventId = result.dataValues.id;
+        res.locals.eventId = eventId;
+        res.locals.title = result.dataValues.title;
+        res.locals.eventDatetime = result.dataValues.event_datetime;
+
         for(let i = 0; i < res.locals.admins.length; i++) {
             res.locals.admins[i].event_id = eventId;
         }
         const encrypt = crypto.createHash('sha256').update(eventId + ' ').digest('hex');
-        
+
         const updateResult = await Event.update(
             {
                 event_hash: encrypt,
@@ -108,6 +111,65 @@ router.post('/', async function(req, res, next) {
     try {
         const result = await EventAdmin.bulkCreate(admins);
 
+        const userAdmin = [];
+        const noUserAdmin = [];
+
+        for(let i = 0; i < result.length; i++) {
+            const temp = result[i].dataValues;
+            if(temp.user_id === null) {
+                noUserAdmin.push(temp.user_phone);
+            }
+            else if(temp.user_id !== res.locals.user.id) {
+                userAdmin.push(temp.user_id);
+            }
+        }
+        const eventAdmins = {
+            user: userAdmin,
+            noUser: noUserAdmin,
+        };
+
+        res.locals.adminIds = eventAdmins;
+
+        next();
+    }
+    catch(exception) {
+        console.log(exception);
+        responseJson.result = code.UNKNOWN_ERROR;
+        responseJson.detail = 'unknown error2';
+        res.json(responseJson);
+    }
+});
+
+// sendFcm or sms
+router.post('/', async function(req, res, next) {
+    const responseJson = {};
+    const adminIds = res.locals.adminIds;
+    console.log(adminIds);
+    try {
+        const result = await User.findAll(
+            {
+                where: {
+                    id: adminIds.user,
+                },
+                attributes: ['id', 'phone_number', 'firebase_token'],
+            },
+        );
+
+        const fbTokens = [];
+        for(let i = 0; i < result.length; i++) {
+            const temp = result[i].dataValues.firebase_token;
+            fbTokens.push(temp);
+        }
+
+        const fcm = await util.sendFcm(
+            res.locals.title,
+            res.locals.title + '의 관리자로 초대되었습니다.\n' + '시간 : ' + res.locals.eventDatetime + '\n',
+            '서버주소/event/' + res.locals.eventId,
+            fbTokens,
+        );
+
+        // TODO : admins.noUser = 회원가입 안된 사람들 문자로
+
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'success';
         responseJson.data = {id: res.locals.eventId};
@@ -115,7 +177,7 @@ router.post('/', async function(req, res, next) {
     catch(exception) {
         console.log(exception);
         responseJson.result = code.UNKNOWN_ERROR;
-        responseJson.detail = 'unknown error2';
+        responseJson.detail = 'unknown error3';
     }
     finally {
         res.json(responseJson);
@@ -189,7 +251,7 @@ router.get('/', async function(req, res, next) {
         const isHost = req.query.host;
         if(typeof isHost === 'undefined') {
             responseJson.result = code.INVALID_QUERY;
-            responseJson.detail = 'params error';    
+            responseJson.detail = 'params error';
         }
         else if(isHost === 'true') {
             const result1 = await Event.findAll(
@@ -250,7 +312,7 @@ router.get('/', async function(req, res, next) {
                 ],
             });
             responseJson.result = code.SUCCESS;
-            responseJson.detail = 'success';            
+            responseJson.detail = 'success';
             responseJson.data = result;
         }
     }
@@ -290,7 +352,7 @@ router.get('/:id', async function(req, res, next) {
                 );
                 data.eventAdmin = result2;
                 responseJson.result = code.SUCCESS;
-                responseJson.detail = 'success';            
+                responseJson.detail = 'success';
                 responseJson.data = data;
             }
             else {
@@ -312,7 +374,7 @@ router.get('/:id', async function(req, res, next) {
 // event close
 router.put('/close/:id', async function(req, res, next) {
     const responseJson = {};
-    const eventId = req.params.id;    
+    const eventId = req.params.id;
     const myId = res.locals.user.id;
     try {
         if(await masterCheck(myId, eventId)) {
