@@ -178,16 +178,29 @@ router.post('/', async function(req, res, next) {
     }
 });
 
-router.delete('/:id/:eventId', async function(req, res, next) {
+router.delete('/:id', async function(req, res, next) {
     const responseJson = {};
-    if(!await masterCheck(res.locals.user.id, req.params.eventId)) {
-        responseJson.result = code.NO_AUTH;
-        responseJson.detail = 'no auth';
-        res.json(responseJson);
-        return;
-    }
+
     try {
-        const result = await BreakDown.destroy(
+        const result = await BreakDown.findOne(
+            {
+                where: {
+                    id: req.params.id,
+                },
+                attributes: ['id', 'event_id'],
+            },
+        );
+
+        const eventId = result.dataValues.event_id;
+
+        if(!await masterCheck(res.locals.user.id, eventId)) {
+            responseJson.result = code.NO_AUTH;
+            responseJson.detail = 'no auth';
+            res.json(responseJson);
+            return;
+        }
+
+        const result2 = await BreakDown.destroy(
             {
                 where: {
                     id: req.params.id,
@@ -195,12 +208,16 @@ router.delete('/:id/:eventId', async function(req, res, next) {
                 },
             },
         );
-        if(result === 0) {
+        if(result2 === 0) {
             responseJson.result = code.NO_DATA;
             responseJson.detail = 'no direct input, or no data';
         }
-        else if(result === 1) {
+        else if(result2 === 1) {
             responseJson.result = code.SUCCESS;
+            responseJson.detail = 'success';
+        }
+        else {
+            responseJson.result = code.UNKNOWN_ERROR;
             responseJson.detail = 'success';
         }
     }
