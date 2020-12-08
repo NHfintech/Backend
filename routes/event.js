@@ -277,11 +277,20 @@ router.get('/:id', async function(req, res, next) {
             responseJson.result = code.NO_DATA;
             responseJson.detail = 'cannot find eventData';
         }
-        else {
-            let haveAuth = result.dataValues.user_id === myId;
-            haveAuth = haveAuth || await adminCheck(myId, eventId) || await guestCheck(myId, eventId);
-            if(haveAuth) {
-                const data = result.dataValues;
+        else {            
+            const data = result.dataValues;
+            if(result.dataValues.user_id === myId) {
+                data.userType = 'master';                
+            }
+            else {
+                if(await adminCheck(myId, eventId)) {
+                    data.userType = 'admin'
+                }
+                else if(await guestCheck(myId, eventId)) {
+                    data.userType = 'guest'
+                }
+            }
+            if(typeof data.userType !== 'undefined') {
                 const result2 = await EventAdmin.findAll(
                     {
                         attributes: ['user_phone'],
