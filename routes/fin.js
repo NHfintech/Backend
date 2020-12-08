@@ -116,6 +116,9 @@ router.post('/', async function(req, res, next) {
             });
         responseJson.result= code.SUCCESS;
         responseJson.detail= 'finaccount create success';
+        responseJson.data = {
+            fin_account: finAcno
+        }
         res.json(responseJson);
     }
     catch (error) {
