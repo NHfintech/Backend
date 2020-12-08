@@ -16,7 +16,7 @@ createBodyHeader = function(apiNm, userId) {
     const time = moment().format('YYYYMMDD-HHmmss');
     const tsymd = time.substring(0, 8);
     const trtm = time.substring(9, 15);
-    const ut = Math.floor(new Date().getTime() / 1000);
+    const ut = Math.floor(new Date().getTime());
     const isTuno = ut + userId.toString();
 
     const postBodyHeader = {
@@ -83,7 +83,7 @@ router.post('/', async function(req, res, next) {
         const result = await axios.post(getNHURL(apiNm), body);
         if(result.data.Header.Rpcd !== '00000') {
             responseJson.result = code.NH_API_ERROR;
-            responseJson.detail = reult.data.Header.Rsms;
+            responseJson.detail = result.data.Header.Rsms;
             res.json(responseJson);
         }
         else {
@@ -94,7 +94,7 @@ router.post('/', async function(req, res, next) {
     catch (error) {
         responseJson.result = code.NH_API_ERROR;
         responseJson.detail = 'nh api (CheckOpenFinAccountDirect) error';
-        next(error);
+        res.json(responseJson);
     }
 });
 
@@ -125,7 +125,6 @@ router.post('/', async function(req, res, next) {
         responseJson.result = code.DB_ERROR;
         responseJson.detail = 'user table update error';
         res.json(responseJson);
-        next(error);
     }
 });
 
