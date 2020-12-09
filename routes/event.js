@@ -144,7 +144,6 @@ router.post('/', async function(req, res, next) {
 router.post('/', async function(req, res, next) {
     const responseJson = {};
     const adminIds = res.locals.adminIds;
-    console.log(adminIds);
     try {
         const result = await User.findAll(
             {
@@ -158,15 +157,22 @@ router.post('/', async function(req, res, next) {
         const fbTokens = [];
         for(let i = 0; i < result.length; i++) {
             const temp = result[i].dataValues.firebase_token;
-            fbTokens.push(temp);
+            if(temp != null) {
+                fbTokens.push(temp);
+            }
+            else {
+                adminIds.noUser.push(result[i].dataValues.phone_number);
+            }
         }
 
-        const fcm = await util.sendFcm(
-            res.locals.title,
-            res.locals.title + '의 관리자로 초대되었습니다.\n' + '시간 : ' + res.locals.eventDatetime + '\n',
-            '서버주소/event/' + res.locals.eventId,
-            fbTokens,
-        );
+        if(fbTokens.length !== 0) {
+            const fcm = await util.sendFcm(
+                res.locals.title,
+                res.locals.title + '의 관리자로 초대되었습니다.\n' + '시간 : ' + res.locals.eventDatetime + '\n',
+                '서버주소/event/' + res.locals.eventId,
+                fbTokens,
+            );
+        }
 
         // TODO : admins.noUser = 회원가입 안된 사람들 문자로
 
@@ -339,10 +345,10 @@ router.get('/:id', async function(req, res, next) {
             responseJson.result = code.NO_DATA;
             responseJson.detail = 'cannot find eventData';
         }
-        else {            
+        else {
             const data = result.dataValues;
             if(result.dataValues.user_id === myId) {
-                data.userType = 'master';                
+                data.userType = 'master';
             }
             else {
                 if(await adminCheck(myId, eventId)) {
