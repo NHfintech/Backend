@@ -200,6 +200,7 @@ router.put('/:id', async function(req, res, next) {
         if(await masterCheck(userId, eventId)) {
             const result = await Event.update(
                 {
+                    category: body.category,
                     title: body.title,
                     location: body.location,
                     body: body.body,
