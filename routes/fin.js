@@ -256,6 +256,14 @@ router.post('/receive', async function(req, res, next) {
             return;
         }
 
+        console.log(result);
+        if(result.dataValues.is_received) {
+            responseJson.result = code.UNKNOWN_ERROR;
+            responseJson.detail = 'already received';
+            res.json(responseJson);
+            return;
+        }
+
         if(result.dataValues.user_id !== res.locals.user.id) {
             responseJson.result = code.NO_AUTH;
             responseJson.detail = 'no auth';
@@ -309,12 +317,38 @@ router.post('/receive', async function(req, res, next) {
         body.Header = createBodyHeader(apiNm, res.locals.user.id);
 
         const nhResult = await axios.post(getNHURL(apiNm), body);
-        responseJson.result = code.SUCCESS;
-        responseJson.detail = 'receive success';
+
+        next();
     }
     catch(exception) {
         responseJson.result = code.NH_API_ERROR;
         responseJson.detail = 'nh api( ReceivedTransferAccountNumber ) error';
+        res.json(responseJson);
+    }
+});
+
+// update event's is_received
+router.post('/receive', async function(req, res, next) {
+    const responseJson = {};
+
+    try {
+        const result = await Event.update(
+            {
+                is_received: true,
+            },
+            {
+                where: {
+                    id: res.locals.eventId,
+                },
+            },
+        );
+
+        responseJson.result = code.SUCCESS;
+        responseJson.detail = 'receive success';
+    }
+    catch(exception) {
+        responseJson.result = code.DB_ERROR;
+        responseJson.detail = 'db update error';
     }
     finally {
         res.json(responseJson);
