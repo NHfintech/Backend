@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {User, EventAdmin} = require('../models');
+const {sequelize, User, EventAdmin} = require('../models');
 const bcrypt = require('bcrypt');
 const util = require('../utils.js');
 const code = util.code;
@@ -52,6 +52,7 @@ router.get('/overlap/username', async function(req, res, next) {
 // 회원가입
 router.post('/signup', async function(req, res, next) {
     const responseJson = {};
+    let transaction = await sequelize.transaction();
     try {
         if(util.phoneNumberCheck(req.body.phone_number)) {
             const bcPw = bcrypt.hashSync(req.body.password, util.saltRounds);
@@ -60,7 +61,7 @@ router.post('/signup', async function(req, res, next) {
                 password: bcPw,
                 name: req.body.name,
                 phone_number: req.body.phone_number,
-            });
+            }, {transaction});
             responseJson.result = code.SUCCESS;
             responseJson.detail = 'signup success';
 
@@ -78,9 +79,11 @@ router.post('/signup', async function(req, res, next) {
                         where: {
                             user_phone: req.body.phone_number,
                         },
-                    },
+                        transaction
+                    }
                 );
             }
+            await transaction.commit();
         }
         else {
             responseJson.result = code.PHONE_NUMBER_INVALID;
@@ -88,8 +91,11 @@ router.post('/signup', async function(req, res, next) {
         }
     }
     catch(exception) {
+        if (transaction) {
+             await transaction.rollback();
+        }
         responseJson.result = code.UNKNOWN_ERROR;
-        responseJson.detail = 'unknown error';
+        responseJson.detail = 'sign up error';
     }
     finally {
         res.json(responseJson);
