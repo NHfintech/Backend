@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const {User, Event, EventAdmin, Guest} = require('../models');
+const {sequelize, User, Event, EventAdmin, Guest} = require('../models');
 const util = require('../utils');
 const code = util.code;
 
@@ -57,6 +57,85 @@ router.post('/', async function(req, res, next) {
     next();
 });
 
+
+// post2 : event insert
+router.post('/', async function(req, res, next) {
+    const responseJson = {};
+    const body = req.body;
+    const myId = res.locals.user.id;
+    const admins = res.locals.admins;    
+    let transaction = await sequelize.transaction();
+    try {
+        const result = await Event.create(
+            {
+                user_id: myId,
+                category: body.category,
+                title: body.title,
+                location: body.location,
+                body: body.body,
+                invitation_url: body.invitationUrl,
+                event_datetime: body.eventDatetime,
+                is_activated: true,
+            }, 
+            { transaction }
+        );
+        const eventId = result.dataValues.id;
+        res.locals.eventId = eventId;
+        res.locals.title = result.dataValues.title;
+        res.locals.eventDatetime = result.dataValues.event_datetime;
+
+        for(let i = 0; i < admins.length; i++) {
+            admins[i].event_id = eventId;
+        }
+        const encrypt = crypto.createHash('sha256').update(eventId + ' ').digest('hex');
+        const updateResult = await Event.update(
+            {
+                event_hash: encrypt,
+            },
+            {
+                where: {
+                    id: eventId,
+                },
+                transaction
+            },
+        );
+
+        //event admin insert
+        const result2 = await EventAdmin.bulkCreate(admins, { transaction });
+
+        const userAdmin = [];
+        const noUserAdmin = [];
+
+        for(let i = 0; i < result2.length; i++) {
+            const temp = result2[i].dataValues;
+            if(temp.user_id === null) {
+                noUserAdmin.push(temp.user_phone);
+            }
+            else if(temp.user_id !== myId) {
+                userAdmin.push(temp.user_id);
+            }
+        }
+        const eventAdmins = {
+            user: userAdmin,
+            noUser: noUserAdmin,
+        };
+
+        res.locals.adminIds = eventAdmins;
+        await transaction.commit();
+        next();
+    }
+    catch(exception) {
+        console.log(exception);
+        if (transaction) {
+            await transaction.rollback();
+       }
+        responseJson.result = code.UNKNOWN_ERROR;
+        responseJson.detail = 'event create db error';
+        res.json(responseJson);
+    }
+});
+
+/*
 // post2 : event insert
 router.post('/', async function(req, res, next) {
     const responseJson = {};
@@ -139,7 +218,7 @@ router.post('/', async function(req, res, next) {
         res.json(responseJson);
     }
 });
-
+*/
 // sendFcm or sms
 router.post('/', async function(req, res, next) {
     const responseJson = {};
@@ -231,21 +310,32 @@ router.put('/:id', async function(req, res, next) {
 
 router.delete('/:id', async function(req, res, next) {
     const responseJson = {};
+    const eventId = req.params.id;
+    const myId = res.locals.user.id;
+    let transaction = await sequelize.transaction();
     try {
-        const result = await Event.destroy(
-            {where: {id: req.params.id}},
-        );
-
-        const adminResult = await EventAdmin.destroy(
-            {where: {event_id: req.params.id}},
-        );
-
-        responseJson.result = code.SUCCESS;
-        responseJson.detail = 'success';
+        if(await masterCheck(myId, eventId)) {
+            const result = await Event.destroy(
+                {where: {id: eventId}, transaction},
+            );    
+            const adminResult = await EventAdmin.destroy(
+                {where: {event_id: eventId}, transaction},
+            );    
+            await transaction.commit();
+            responseJson.result = code.SUCCESS;
+            responseJson.detail = 'success';
+        }
+        else {
+            responseJson.result = code.NO_AUTH;
+            responseJson.detail = 'no auth';
+        }
     }
     catch(exception) {
+        if (transaction) {
+            await transaction.rollback();
+        }
         responseJson.result = code.UNKNOWN_ERROR;
-        responseJson.detail = 'unknown error';
+        responseJson.detail = 'event delete error';
     }
     finally {
         res.json(responseJson);
