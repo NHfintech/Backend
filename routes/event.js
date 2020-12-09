@@ -430,28 +430,42 @@ router.get('/invite/:hash', async function(req, res, next) {
         const hash = req.params.hash;
 
         const result = await Event.findOne({
-            attributes: ['id'],
+            attributes: ['id', 'user_id'],
             where: {event_hash: hash},
         });
-        const eventId = result.dataValues.id;
 
         if (result === null) {
             responseJson.result = code.NO_DATA;
             responseJson.detail = 'cannot find event_hash';
         }
         else {
-            const hostCheck = await masterCheck(hostId, eventId) || await adminCheck(hostId, eventId);
+            const eventId = result.dataValues.id;
+            const hostCheck = result.dataValues.user_id == hostId || await adminCheck(hostId, eventId);
             if(hostCheck) {
-                const result2 = await Guest.create(
-                    {
-                        user_id: myId,
-                        event_id: eventId,
-                        eventAdmin_id: hostId,
-                    },
-                );
+                const data = {event_id: eventId};
+                if(result.dataValues.user_id == myId) {
+                    data.userType = 'master';                
+                }
+                else {
+                    if(await adminCheck(myId, eventId)) {
+                        data.userType = 'admin'
+                    }
+                    else {
+                        data.userType = 'guest'
+                    }
+                }
+                if(data.userType === 'guest') {
+                    const result2 = await Guest.findOrCreate({
+                        where:{
+                            user_id: myId,
+                            event_id: eventId,
+                            eventAdmin_id: hostId,
+                        }
+                    });
+                }
                 responseJson.result = code.SUCCESS;
                 responseJson.detail = 'success';
-                responseJson.data = {event_id: eventId};
+                responseJson.data = data;
             }
             else {
                 responseJson.result = code.NO_AUTH;
