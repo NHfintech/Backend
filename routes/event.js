@@ -508,9 +508,9 @@ router.delete('/:id', async function(req, res, next) {
                 const bdResult = await BreakDown.findOne(
                     {where: {id: eventId}},
                 );
-                if(bdResult !== null && result.dataValues.is_received == 0) {
+                if(bdResult !== null) {
                     responseJson.result = code.UNKNOWN_ERROR;
-                    responseJson.detail = 'event is not received';
+                    responseJson.detail = 'event have breakdown';
                 }
                 else {
                     await Event.destroy(
