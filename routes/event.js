@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const {sequelize, User, Event, EventAdmin, Guest} = require('../models');
+const {sequelize, User, Event, EventAdmin, Guest, BreakDown} = require('../models');
 const util = require('../utils');
 const code = util.code;
 
@@ -492,21 +492,50 @@ router.put('/:id', async function(req, res, next) {
 
 router.delete('/:id', async function(req, res, next) {
     const responseJson = {};
+    const eventId = req.params.id;
+    const myId = res.locals.user.id;
+    let transaction = await sequelize.transaction();
     try {
-        const result = await Event.destroy(
-            {where: {id: req.params.id}},
-        );
-
-        const adminResult = await EventAdmin.destroy(
-            {where: {event_id: req.params.id}},
-        );
-
-        responseJson.result = code.SUCCESS;
-        responseJson.detail = 'success';
+        if(await masterCheck(myId, eventId)) {
+            const result = await Event.findOne(
+                {where: {id: eventId}},
+            );
+            if(result.dataValues.is_activated == 1) {
+                responseJson.result = code.UNKNOWN_ERROR;
+                responseJson.detail = 'event is not terminated';
+            }
+            else {
+                const bdResult = await BreakDown.findOne(
+                    {where: {id: eventId}},
+                );
+                if(bdResult !== null && result.dataValues.is_received == 0) {
+                    responseJson.result = code.UNKNOWN_ERROR;
+                    responseJson.detail = 'event is not received';
+                }
+                else {
+                    await Event.destroy(
+                        {where: {id: eventId}, transaction},
+                    );    
+                    await EventAdmin.destroy(
+                        {where: {event_id: eventId}, transaction},
+                    );    
+                    await transaction.commit();
+                    responseJson.result = code.SUCCESS;
+                    responseJson.detail = 'success';
+                }
+            }
+        }
+        else {
+            responseJson.result = code.NO_AUTH;
+            responseJson.detail = 'no auth';
+        }
     }
     catch(exception) {
+        if (transaction) {
+            await transaction.rollback();
+        }
         responseJson.result = code.UNKNOWN_ERROR;
-        responseJson.detail = 'unknown error';
+        responseJson.detail = 'event delete error';
     }
     finally {
         res.json(responseJson);
