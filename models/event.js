@@ -50,6 +50,16 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: false,
         },
+        message: {
+            type: DataTypes.STRING(100),
+            allowNull: false,
+            defaultValue: '',
+        },
+        pair_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            unique: true,
+        }
     },
     {
         timestamps: false,
