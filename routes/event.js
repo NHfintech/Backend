@@ -253,7 +253,7 @@ router.post('/', async function(req, res, next) {
             console.log(exception);
             if (transaction) {
                 await transaction.rollback();
-        }
+            }
             responseJson.result = code.UNKNOWN_ERROR;
             responseJson.detail = 'event create db error';
             res.json(responseJson);
@@ -424,25 +424,54 @@ router.put('/:id', async function(req, res, next) {
     const body = req.body;
     const userId = res.locals.user.id;
     const eventId = req.params.id;
-
+    
+    let transaction = await sequelize.transaction();
     try {
         if(await masterCheck(userId, eventId)) {
-            const result = await Event.update(
-                {
-                    category: body.category,
-                    title: body.title,
-                    location: body.location,
-                    body: body.body,
-                    invitation_url: body.invitationUrl,
-                    event_datetime: body.eventDatetime,
-                },
-                {
-                    where: {
-                        id: eventId,
-                    }},
+            const result = await Event.findOne(
+                {where: {id: eventId}},
             );
-            responseJson.result = code.SUCCESS;
-            responseJson.detail = 'success';
+            if(result.dataValues.is_activated == 0) {
+                responseJson.result = code.UNKNOWN_ERROR;
+                responseJson.detail = 'event is terminated';
+            }
+            else {
+                await Event.update(
+                    {
+                        title: body.title,
+                        location: body.location,
+                        body: body.body,
+                        invitation_url: body.invitationUrl,
+                        event_datetime: body.eventDatetime,
+                    },
+                    {
+                        where: {
+                            id: eventId,
+                        },
+                        transaction
+                    },
+                );
+                if(result.dataValues.pair_id !== null) {
+                    await Event.update(
+                        {
+                            title: body.title,
+                            location: body.location,
+                            body: body.body,
+                            invitation_url: body.invitationUrl,
+                            event_datetime: body.eventDatetime,
+                        },
+                        {
+                            where: {
+                                id: result.dataValues.pair_id,
+                            },
+                            transaction
+                        },
+                    );
+                }
+                responseJson.result = code.SUCCESS;
+                responseJson.detail = 'success';            
+                await transaction.commit();
+            }
         }
         else {
             responseJson.result = code.NO_AUTH;
@@ -450,6 +479,9 @@ router.put('/:id', async function(req, res, next) {
         }
     }
     catch(exception) {
+        if (transaction) {
+            await transaction.rollback();
+        }
         responseJson.result = code.UNKNOWN_ERROR;
         responseJson.detail = 'unknown error';
     }
