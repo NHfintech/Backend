@@ -256,14 +256,15 @@ router.post('/receive', async function(req, res, next) {
             return;
         }
 
-        if(!result.dataValues.is_activated) {
+        console.log(result);
+
+        if(result.dataValues.is_activated) {
             responseJson.result = code.UNKNOWN_ERROR;
-            responseJson.detail = 'this event is opened.';
+            responseJson.detail = 'event is not terminated';
             res.json(responseJson);
             return;
         }
-
-
+      
         if(result.dataValues.is_received) {
             responseJson.result = code.UNKNOWN_ERROR;
             responseJson.detail = 'already received';

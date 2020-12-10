@@ -24,6 +24,9 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: '',
         },
+        relationship: {type: DataTypes.STRING(5),
+            allowNull: true
+        }
     },
     {
         timestamps: false,
