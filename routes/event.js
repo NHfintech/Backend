@@ -27,31 +27,47 @@ adminCheck = async function(userId, eventId) {
     return check !== null;
 };
 
-// post1 : check phonenubmer
-router.post('/', async function(req, res, next) {
-    const responseJson = {};
-    const eventAdmin = req.body.eventAdmin;
+getUserByPhone = async function(phone) {
+    let resJson = null;
     const admin = [];
-
-    for(let i = 0; i < eventAdmin.length; i++) {
-        if(util.phoneNumberCheck(eventAdmin[i])) {
+    for (let i = 0; i < phone.length; i++) {
+        if (util.phoneNumberCheck(phone[i])) {
             const adminResult = await User.findOne(
-                {where: {phone_number: eventAdmin[i]}},
+                {where: {phone_number: phone[i]}},
             );
 
-            if(adminResult == null) {
-                admin.push({user_id: null, user_phone: eventAdmin[i]});
+            if (adminResult == null) {
+                admin.push({user_id: null, user_phone: phone[i]});
             }
             else {
-                admin.push({user_id: adminResult.id, user_phone: eventAdmin[i]});
+                admin.push({
+                    user_id: adminResult.id,
+                    user_phone: phone[i],
+                });
             }
         }
         else {
-            responseJson.result = code.PHONE_NUMBER_INVALID;
-            responseJson.detail = 'phone number invalid';
-            res.json(responseJson);
-            return;
+            resJson = {};
+            resJson.result = code.PHONE_NUMBER_INVALID;
+            resJson.detail = 'phone number invalid';
+            break;
         }
+    }
+    return {
+        responseJson: resJson,
+        admin: admin,
+    };
+};
+
+// post1 : check phonenubmer
+router.post('/', async function(req, res, next) {
+    const eventAdmin = req.body.eventAdmin;
+
+    const {responseJson, admin} = await getUserByPhone(eventAdmin);
+
+    if(responseJson) {
+        res.json(responseJson);
+        return;
     }
     res.locals.admins = admin;
     next();
@@ -63,8 +79,8 @@ router.post('/', async function(req, res, next) {
     const responseJson = {};
     const body = req.body;
     const myId = res.locals.user.id;
-    const admins = res.locals.admins;    
-    let transaction = await sequelize.transaction();
+    const admins = res.locals.admins;
+    const transaction = await sequelize.transaction();
     try {
         const result = await Event.create(
             {
@@ -76,8 +92,8 @@ router.post('/', async function(req, res, next) {
                 invitation_url: body.invitationUrl,
                 event_datetime: body.eventDatetime,
                 is_activated: true,
-            }, 
-            { transaction }
+            },
+            {transaction},
         );
         const eventId = result.dataValues.id;
         res.locals.eventId = eventId;
@@ -96,12 +112,12 @@ router.post('/', async function(req, res, next) {
                 where: {
                     id: eventId,
                 },
-                transaction
+                transaction,
             },
         );
 
-        //event admin insert
-        const result2 = await EventAdmin.bulkCreate(admins, { transaction });
+        // event admin insert
+        const result2 = await EventAdmin.bulkCreate(admins, {transaction});
 
         const userAdmin = [];
         const noUserAdmin = [];
@@ -128,7 +144,7 @@ router.post('/', async function(req, res, next) {
         console.log(exception);
         if (transaction) {
             await transaction.rollback();
-       }
+        }
         responseJson.result = code.UNKNOWN_ERROR;
         responseJson.detail = 'event create db error';
         res.json(responseJson);
@@ -160,16 +176,25 @@ router.post('/', async function(req, res, next) {
             }
         }
 
+        const title = res.locals.title;
+        const content = res.locals.title + '의 관리자로 초대되었습니다.';
+
         if(fbTokens.length !== 0) {
             const fcm = await util.sendFcm(
-                res.locals.title,
-                res.locals.title + '의 관리자로 초대되었습니다.\n' + '시간 : ' + res.locals.eventDatetime + '\n',
+                title,
+                content,
                 '서버주소/event/' + res.locals.eventId,
                 fbTokens,
             );
         }
 
         // TODO : admins.noUser = 회원가입 안된 사람들 문자로
+        if(adminIds.noUser.length !== 0) {
+            const sms = await util.sendSms(
+                adminIds.noUser,
+                content,
+            );
+        }
 
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'success';
@@ -193,9 +218,19 @@ router.put('/:id', async function(req, res, next) {
 
     try {
         if(await masterCheck(userId, eventId)) {
+            const {resJson, admin} = await getUserByPhone(body.eventAdmin);
+
+            if(resJson) {
+                res.json(resJson);
+                return;
+            }
+
+            for(let i = 0; i < admin.length; i++) {
+                admin[i].event_id = eventId;
+            }
+
             const result = await Event.update(
                 {
-                    category: body.category,
                     title: body.title,
                     location: body.location,
                     body: body.body,
@@ -207,6 +242,19 @@ router.put('/:id', async function(req, res, next) {
                         id: eventId,
                     }},
             );
+
+            for(let i = 0; i < admin.length; i++) {
+                await EventAdmin.findOrCreate(
+                    {
+                        where: {
+                            user_id: admin[i].user_id,
+                            event_id: admin[i].event_id,
+                            user_phone: admin[i].user_phone,
+                        },
+                    },
+                );
+            }
+
             responseJson.result = code.SUCCESS;
             responseJson.detail = 'success';
         }
@@ -216,8 +264,9 @@ router.put('/:id', async function(req, res, next) {
         }
     }
     catch(exception) {
-        responseJson.result = code.UNKNOWN_ERROR;
-        responseJson.detail = 'unknown error';
+        console.log(exception);
+        responseJson.result = code.DB_ERROR;
+        responseJson.detail = 'event or eventadmin update error';
     }
     finally {
         res.json(responseJson);
@@ -228,15 +277,15 @@ router.delete('/:id', async function(req, res, next) {
     const responseJson = {};
     const eventId = req.params.id;
     const myId = res.locals.user.id;
-    let transaction = await sequelize.transaction();
+    const transaction = await sequelize.transaction();
     try {
         if(await masterCheck(myId, eventId)) {
             const result = await Event.destroy(
                 {where: {id: eventId}, transaction},
-            );    
+            );
             const adminResult = await EventAdmin.destroy(
                 {where: {event_id: eventId}, transaction},
-            );    
+            );
             await transaction.commit();
             responseJson.result = code.SUCCESS;
             responseJson.detail = 'success';
@@ -359,10 +408,10 @@ router.get('/:id', async function(req, res, next) {
             }
             else {
                 if(await adminCheck(myId, eventId)) {
-                    data.userType = 'admin'
+                    data.userType = 'admin';
                 }
                 else if(await guestCheck(myId, eventId)) {
-                    data.userType = 'guest'
+                    data.userType = 'guest';
                 }
             }
             if(typeof data.userType !== 'undefined') {
@@ -450,23 +499,23 @@ router.get('/invite/:hash', async function(req, res, next) {
             if(hostCheck) {
                 const data = {event_id: eventId};
                 if(result.dataValues.user_id == myId) {
-                    data.userType = 'master';                
+                    data.userType = 'master';
                 }
                 else {
                     if(await adminCheck(myId, eventId)) {
-                        data.userType = 'admin'
+                        data.userType = 'admin';
                     }
                     else {
-                        data.userType = 'guest'
+                        data.userType = 'guest';
                     }
                 }
                 if(data.userType === 'guest') {
                     const result2 = await Guest.findOrCreate({
-                        where:{
+                        where: {
                             user_id: myId,
                             event_id: eventId,
                             eventAdmin_id: hostId,
-                        }
+                        },
                     });
                 }
                 responseJson.result = code.SUCCESS;
