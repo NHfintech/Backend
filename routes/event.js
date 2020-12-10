@@ -506,8 +506,12 @@ router.delete('/:id', async function(req, res, next) {
             }
             else {
                 const bdResult = await BreakDown.findOne(
-                    {where: {id: eventId}},
-                );
+                    {where: 
+                        {
+                            event_id: eventId,
+                            is_direct_input: 0
+                        }
+                    });
                 if(bdResult !== null) {
                     responseJson.result = code.UNKNOWN_ERROR;
                     responseJson.detail = 'event have breakdown';
