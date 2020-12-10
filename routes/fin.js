@@ -257,6 +257,13 @@ router.post('/receive', async function(req, res, next) {
         }
 
         console.log(result);
+
+        if(result.dataValues.is_activated) {
+            responseJson.result = code.UNKNOWN_ERROR;
+            responseJson.detail = 'event is not terminated';
+            res.json(responseJson);
+            return;
+        }
         if(result.dataValues.is_received) {
             responseJson.result = code.UNKNOWN_ERROR;
             responseJson.detail = 'already received';

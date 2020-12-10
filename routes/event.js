@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const {sequelize, User, Event, EventAdmin, Guest} = require('../models');
+const {sequelize, User, Event, EventAdmin, Guest, BreakDown} = require('../models');
 const util = require('../utils');
 const code = util.code;
 
@@ -30,108 +30,304 @@ adminCheck = async function(userId, eventId) {
 // post1 : check phonenubmer
 router.post('/', async function(req, res, next) {
     const responseJson = {};
-    const eventAdmin = req.body.eventAdmin;
+    const isWedding = req.body.category === 'wedding';
     const admin = [];
-
-    for(let i = 0; i < eventAdmin.length; i++) {
-        if(util.phoneNumberCheck(eventAdmin[i])) {
-            const adminResult = await User.findOne(
-                {where: {phone_number: eventAdmin[i]}},
-            );
-
-            if(adminResult == null) {
-                admin.push({user_id: null, user_phone: eventAdmin[i]});
-            }
-            else {
-                admin.push({user_id: adminResult.id, user_phone: eventAdmin[i]});
-            }
-        }
-        else {
-            responseJson.result = code.PHONE_NUMBER_INVALID;
-            responseJson.detail = 'phone number invalid';
+    const eventAdmin = req.body.eventAdmin;
+    const myAdmin = [];
+    const urAdmin = [];
+    res.locals.isWedding = isWedding;
+    if(isWedding) {
+        const partnerResult = await User.findOne(
+            {where: {phone_number: req.body.partner}},
+        );
+        if(partnerResult == null) {
+            responseJson.result = code.NO_USER;
+            responseJson.detail = 'partner no user';
             res.json(responseJson);
             return;
         }
-    }
-    res.locals.admins = admin;
-    next();
-});
+        res.locals.partnerId = partnerResult.id;
+        const temp1 = [];
+        const temp2 = [];
+        if(req.body.myFather !== '') {
+            temp1.push({phone: req.body.myFather, relationship: 'f'});
+        }
+        if(req.body.myMother !== '') {
+            temp1.push({phone: req.body.myMother, relationship: 'm'});
+        }
+        if(req.body.urFather !== '') {
+            temp2.push({phone: req.body.urFather, relationship: 'f'});
+        }
+        if(req.body.urMother !== '') {
+            temp2.push({phone: req.body.urMother, relationship: 'm'});
+        }
 
+        for(let i = 0; i < temp1.length; i++) {
+            if(util.phoneNumberCheck(temp1[i].phone)) {
+                const adminResult = await User.findOne(
+                    {where: {phone_number: temp1[i].phone}},
+                );    
+                if(adminResult == null) {
+                    myAdmin.push({user_id: null, user_phone: temp1[i].phone, relationship: temp1[i].relationship });
+                }
+                else {
+                    myAdmin.push({user_id: adminResult.id, user_phone: temp1[i].phone, relationship: temp1[i].relationship});
+                }
+            }
+            else {
+                responseJson.result = code.PHONE_NUMBER_INVALID;
+                responseJson.detail = 'phone number invalid';
+                res.json(responseJson);
+                return;
+            }
+        }
+        for(let i = 0; i < temp1.length; i++) {
+            if(util.phoneNumberCheck(temp2[i].phone)) {
+                const adminResult = await User.findOne(
+                    {where: {phone_number: temp2[i].phone}},
+                );    
+                if(adminResult == null) {
+                    urAdmin.push({user_id: null, user_phone: temp2[i].phone, relationship: temp2[i].relationship});
+                }
+                else {
+                    urAdmin.push({user_id: adminResult.id, user_phone: temp2[i].phone, relationship: temp2[i].relationship});
+                }
+            }
+            else {
+                responseJson.result = code.PHONE_NUMBER_INVALID;
+                responseJson.detail = 'phone number invalid';
+                res.json(responseJson);
+                return;
+            }
+        }
+        res.locals.myAdmin = myAdmin;
+        res.locals.urAdmin = urAdmin;
+        next();
+    }
+    else {
+        for(let i = 0; i < eventAdmin.length; i++) {
+            if(util.phoneNumberCheck(eventAdmin[i])) {
+                const adminResult = await User.findOne(
+                    {where: {phone_number: eventAdmin[i]}},
+                );
+
+                if(adminResult == null) {
+                    admin.push({user_id: null, user_phone: eventAdmin[i]});
+                }
+                else {
+                    admin.push({user_id: adminResult.id, user_phone: eventAdmin[i]});
+                }
+            }
+            else {
+                responseJson.result = code.PHONE_NUMBER_INVALID;
+                responseJson.detail = 'phone number invalid';
+                res.json(responseJson);
+                return;
+            }
+        }
+        res.locals.admins = admin;
+        next();
+    }
+});
 
 // post2 : event insert
 router.post('/', async function(req, res, next) {
     const responseJson = {};
     const body = req.body;
     const myId = res.locals.user.id;
-    const admins = res.locals.admins;    
-    let transaction = await sequelize.transaction();
-    try {
-        const result = await Event.create(
-            {
-                user_id: myId,
-                category: body.category,
-                title: body.title,
-                location: body.location,
-                body: body.body,
-                invitation_url: body.invitationUrl,
-                event_datetime: body.eventDatetime,
-                is_activated: true,
-            }, 
-            { transaction }
-        );
-        const eventId = result.dataValues.id;
-        res.locals.eventId = eventId;
-        res.locals.title = result.dataValues.title;
-        res.locals.eventDatetime = result.dataValues.event_datetime;
-
-        for(let i = 0; i < admins.length; i++) {
-            admins[i].event_id = eventId;
-        }
-        const encrypt = crypto.createHash('sha256').update(eventId + ' ').digest('hex');
-        const updateResult = await Event.update(
-            {
-                event_hash: encrypt,
-            },
-            {
-                where: {
-                    id: eventId,
+    const isWedding = res.locals.isWedding;
+    if(isWedding) {
+        const myAdmin = res.locals.myAdmin;
+        const urAdmin = res.locals.urAdmin;
+        const partnerId = res.locals.partnerId;
+        let transaction = await sequelize.transaction();
+        try {
+            const result = await Event.create(
+                {
+                    user_id: myId,
+                    category: body.category,
+                    title: body.title,
+                    location: body.location,
+                    body: body.body,
+                    invitation_url: body.invitationUrl,
+                    event_datetime: body.eventDatetime,
+                    is_activated: true,
+                }, 
+                { transaction }
+            );
+            const result2 = await Event.create(
+                {
+                    user_id: partnerId,
+                    category: body.category,
+                    title: body.title,
+                    location: body.location,
+                    body: body.body,
+                    invitation_url: body.invitationUrl,
+                    event_datetime: body.eventDatetime,
+                    is_activated: true,
+                }, 
+                { transaction }
+            );
+            const eventId = result.dataValues.id;
+            const pEventId = result2.dataValues.id;
+            const encrypt = crypto.createHash('sha256').update(eventId + ' ').digest('hex');
+            const updateResult = await Event.update(
+                {
+                    event_hash: encrypt,
+                    pair_id: pEventId
                 },
-                transaction
-            },
-        );
-
-        //event admin insert
-        const result2 = await EventAdmin.bulkCreate(admins, { transaction });
-
-        const userAdmin = [];
-        const noUserAdmin = [];
-
-        for(let i = 0; i < result2.length; i++) {
-            const temp = result2[i].dataValues;
-            if(temp.user_id === null) {
-                noUserAdmin.push(temp.user_phone);
+                {
+                    where: {
+                        id: eventId,
+                    },
+                    transaction
+                },
+            );
+            const encrypt2 = crypto.createHash('sha256').update(pEventId + ' ').digest('hex');
+            const updateResult2 = await Event.update(
+                {
+                    event_hash: encrypt2,
+                    pair_id: eventId
+                },
+                {
+                    where: {
+                        id: pEventId,
+                    },
+                    transaction
+                },
+            );
+            console.log(myAdmin)
+            for(let i = 0; i < myAdmin.length; i++) {
+                myAdmin[i].event_id = eventId;
             }
-            else if(temp.user_id !== myId) {
-                userAdmin.push(temp.user_id);
+            for(let i = 0; i < urAdmin.length; i++) {
+                urAdmin[i].event_id = pEventId;
             }
+
+            //event admin insert
+            const result3 = await EventAdmin.bulkCreate(myAdmin, { transaction });
+            const myUserAdmin = [];
+            const myNoUserAdmin = [];
+            for(let i = 0; i < result3.length; i++) {
+                const temp = result3[i].dataValues;
+                if(temp.user_id === null) {
+                    myNoUserAdmin.push(temp.user_phone);
+                }
+                else if(temp.user_id !== myId) {
+                    myUserAdmin.push(temp.user_id);
+                }
+            }
+            const eventAdmins = {
+                user: myUserAdmin,
+                noUser: myNoUserAdmin,
+            };
+
+            const result4 = await EventAdmin.bulkCreate(urAdmin, { transaction });
+            const urUserAdmin = [];
+            const urNoUserAdmin = [];
+            for(let i = 0; i < result3.length; i++) {
+                const temp = result3[i].dataValues;
+                if(temp.user_id === null) {
+                    urNoUserAdmin.push(temp.user_phone);
+                }
+                else if(temp.user_id !== myId) {
+                    urUserAdmin.push(temp.user_id);
+                }
+            }
+            const pEventAdmins = {
+                user: urUserAdmin,
+                noUser: urNoUserAdmin,
+            };
+
+            //for fcm 
+            res.locals.eventId = eventId;
+            res.locals.pEventId = pEventId;
+            res.locals.title = result.dataValues.title;
+            res.locals.eventDatetime = result.dataValues.event_datetime;
+            res.locals.adminIds = eventAdmins;
+            res.locals.pAdminIds = pEventAdmins;
+            await transaction.commit();
+            next();
         }
-        const eventAdmins = {
-            user: userAdmin,
-            noUser: noUserAdmin,
-        };
+        catch(exception) {
+            console.log(exception);
+            if (transaction) {
+                await transaction.rollback();
+            }
+            responseJson.result = code.UNKNOWN_ERROR;
+            responseJson.detail = 'event create db error';
+            res.json(responseJson);
+        }
+    } 
+    else {
+        const admins = res.locals.admins;
+        let transaction = await sequelize.transaction();
+        try {
+            const result = await Event.create(
+                {
+                    user_id: myId,
+                    category: body.category,
+                    title: body.title,
+                    location: body.location,
+                    body: body.body,
+                    invitation_url: body.invitationUrl,
+                    event_datetime: body.eventDatetime,
+                    is_activated: true,
+                }, 
+                { transaction }
+            );
+            const eventId = result.dataValues.id;
+            const encrypt = crypto.createHash('sha256').update(eventId + ' ').digest('hex');
+            const updateResult = await Event.update(
+                {
+                    event_hash: encrypt,
+                },
+                {
+                    where: {
+                        id: eventId,
+                    },
+                    transaction
+                },
+            );
+            for(let i = 0; i < admins.length; i++) {
+                admins[i].event_id = eventId;
+            }
 
-        res.locals.adminIds = eventAdmins;
-        await transaction.commit();
-        next();
-    }
-    catch(exception) {
-        console.log(exception);
-        if (transaction) {
-            await transaction.rollback();
-       }
-        responseJson.result = code.UNKNOWN_ERROR;
-        responseJson.detail = 'event create db error';
-        res.json(responseJson);
+            //event admin insert
+            const result2 = await EventAdmin.bulkCreate(admins, { transaction });
+            const userAdmin = [];
+            const noUserAdmin = [];
+            for(let i = 0; i < result2.length; i++) {
+                const temp = result2[i].dataValues;
+                if(temp.user_id === null) {
+                    noUserAdmin.push(temp.user_phone);
+                }
+                else if(temp.user_id !== myId) {
+                    userAdmin.push(temp.user_id);
+                }
+            }
+            const eventAdmins = {
+                user: userAdmin,
+                noUser: noUserAdmin,
+            };
+
+            //for fcm 
+            res.locals.eventId = eventId;
+            res.locals.title = result.dataValues.title;
+            res.locals.eventDatetime = result.dataValues.event_datetime;
+            res.locals.adminIds = eventAdmins;
+            await transaction.commit();
+            next();
+        }
+        catch(exception) {
+            console.log(exception);
+            if (transaction) {
+                await transaction.rollback();
+        }
+            responseJson.result = code.UNKNOWN_ERROR;
+            responseJson.detail = 'event create db error';
+            res.json(responseJson);
+        }
     }
 });
 
@@ -139,6 +335,11 @@ router.post('/', async function(req, res, next) {
 router.post('/', async function(req, res, next) {
     const responseJson = {};
     const adminIds = res.locals.adminIds;
+    const isWedding = res.locals.isWedding;
+    let pAdminIds;
+    if(isWedding) {
+        pAdminIds = res.locals.pAdminIds;
+    }
     try {
         const result = await User.findAll(
             {
@@ -169,7 +370,40 @@ router.post('/', async function(req, res, next) {
             );
         }
 
+        if(isWedding) {
+            const result2 = await User.findAll(
+                {
+                    where: {
+                        id: pAdminIds.user,
+                    },
+                    attributes: ['id', 'phone_number', 'firebase_token'],
+                },
+            );
+    
+            const fbTokens2 = [];
+            for(let i = 0; i < result2.length; i++) {
+                const temp = result2[i].dataValues.firebase_token;
+                if(temp != null) {
+                    fbTokens2.push(temp);
+                }
+                else {
+                    pAdminIds.noUser.push(result2[i].dataValues.phone_number);
+                }
+            }
+    
+            if(fbTokens2.length !== 0) {
+                const fcm = await util.sendFcm(
+                    res.locals.title,
+                    res.locals.title + '의 관리자로 초대되었습니다.\n' + '시간 : ' + res.locals.eventDatetime + '\n',
+                    '서버주소/event/' + res.locals.pEventId,
+                    fbTokens2,
+                );
+            }
+
+        }
+
         // TODO : admins.noUser = 회원가입 안된 사람들 문자로
+        // TODO : pAdminIds.noUser = 같이 ㄱㄱ
 
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'success';
@@ -178,7 +412,7 @@ router.post('/', async function(req, res, next) {
     catch(exception) {
         console.log(exception);
         responseJson.result = code.UNKNOWN_ERROR;
-        responseJson.detail = 'unknown error3';
+        responseJson.detail = 'fcm or sms error';
     }
     finally {
         res.json(responseJson);
@@ -190,25 +424,54 @@ router.put('/:id', async function(req, res, next) {
     const body = req.body;
     const userId = res.locals.user.id;
     const eventId = req.params.id;
-
+    
+    let transaction = await sequelize.transaction();
     try {
         if(await masterCheck(userId, eventId)) {
-            const result = await Event.update(
-                {
-                    category: body.category,
-                    title: body.title,
-                    location: body.location,
-                    body: body.body,
-                    invitation_url: body.invitationUrl,
-                    event_datetime: body.eventDatetime,
-                },
-                {
-                    where: {
-                        id: eventId,
-                    }},
+            const result = await Event.findOne(
+                {where: {id: eventId}},
             );
-            responseJson.result = code.SUCCESS;
-            responseJson.detail = 'success';
+            if(result.dataValues.is_activated == 0) {
+                responseJson.result = code.UNKNOWN_ERROR;
+                responseJson.detail = 'event is terminated';
+            }
+            else {
+                await Event.update(
+                    {
+                        title: body.title,
+                        location: body.location,
+                        body: body.body,
+                        invitation_url: body.invitationUrl,
+                        event_datetime: body.eventDatetime,
+                    },
+                    {
+                        where: {
+                            id: eventId,
+                        },
+                        transaction
+                    },
+                );
+                if(result.dataValues.pair_id !== null) {
+                    await Event.update(
+                        {
+                            title: body.title,
+                            location: body.location,
+                            body: body.body,
+                            invitation_url: body.invitationUrl,
+                            event_datetime: body.eventDatetime,
+                        },
+                        {
+                            where: {
+                                id: result.dataValues.pair_id,
+                            },
+                            transaction
+                        },
+                    );
+                }
+                responseJson.result = code.SUCCESS;
+                responseJson.detail = 'success';            
+                await transaction.commit();
+            }
         }
         else {
             responseJson.result = code.NO_AUTH;
@@ -216,6 +479,9 @@ router.put('/:id', async function(req, res, next) {
         }
     }
     catch(exception) {
+        if (transaction) {
+            await transaction.rollback();
+        }
         responseJson.result = code.UNKNOWN_ERROR;
         responseJson.detail = 'unknown error';
     }
@@ -231,15 +497,37 @@ router.delete('/:id', async function(req, res, next) {
     let transaction = await sequelize.transaction();
     try {
         if(await masterCheck(myId, eventId)) {
-            const result = await Event.destroy(
-                {where: {id: eventId}, transaction},
-            );    
-            const adminResult = await EventAdmin.destroy(
-                {where: {event_id: eventId}, transaction},
-            );    
-            await transaction.commit();
-            responseJson.result = code.SUCCESS;
-            responseJson.detail = 'success';
+            const result = await Event.findOne(
+                {where: {id: eventId}},
+            );
+            if(result.dataValues.is_activated == 1) {
+                responseJson.result = code.UNKNOWN_ERROR;
+                responseJson.detail = 'event is not terminated';
+            }
+            else {
+                const bdResult = await BreakDown.findOne(
+                    {where: 
+                        {
+                            event_id: eventId,
+                            is_direct_input: 0
+                        }
+                    });
+                if(bdResult !== null) {
+                    responseJson.result = code.UNKNOWN_ERROR;
+                    responseJson.detail = 'event have breakdown';
+                }
+                else {
+                    await Event.destroy(
+                        {where: {id: eventId}, transaction},
+                    );    
+                    await EventAdmin.destroy(
+                        {where: {event_id: eventId}, transaction},
+                    );    
+                    await transaction.commit();
+                    responseJson.result = code.SUCCESS;
+                    responseJson.detail = 'success';
+                }
+            }
         }
         else {
             responseJson.result = code.NO_AUTH;
