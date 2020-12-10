@@ -49,16 +49,16 @@ router.post('/', async function(req, res, next) {
         res.locals.partnerId = partnerResult.id;
         const temp1 = [];
         const temp2 = [];
-        if(typeof req.body.myFather !== 'undefined') {
+        if(req.body.myFather !== '') {
             temp1.push({phone: req.body.myFather, relationship: 'f'});
         }
-        if(typeof req.body.myMother !== 'undefined') {
+        if(req.body.myMother !== '') {
             temp1.push({phone: req.body.myMother, relationship: 'm'});
         }
-        if(typeof req.body.urFather !== 'undefined') {
+        if(req.body.urFather !== '') {
             temp2.push({phone: req.body.urFather, relationship: 'f'});
         }
-        if(typeof req.body.urMother !== 'undefined') {
+        if(req.body.urMother !== '') {
             temp2.push({phone: req.body.urMother, relationship: 'm'});
         }
 
