@@ -243,8 +243,10 @@ router.put('/:id', async function(req, res, next) {
                     }},
             );
 
+            const smsList = [];
+            const fcmList = [];
             for(let i = 0; i < admin.length; i++) {
-                await EventAdmin.findOrCreate(
+                const result2 = await EventAdmin.findOne(
                     {
                         where: {
                             user_id: admin[i].user_id,
@@ -253,7 +255,47 @@ router.put('/:id', async function(req, res, next) {
                         },
                     },
                 );
+                if(result2 === null) {
+                    if(admin[i].user_id === null) {
+                        smsList.push(admin[i].user_phone);
+                    }
+                    else {
+                        const result3 = await User.findOne(
+                            {
+                                where: {
+                                    id: admin[i].user_id,
+                                },
+                                attributes: ['firebase_token'],
+                            },
+                        );
+
+                        fcmList.push(result3.firebase_token);
+                    }
+                }
             }
+
+            const result4 = await Event.findOne(
+                {
+                    where: {
+                        id: eventId,
+                    },
+                },
+            );
+
+            const title = result4.dataValues.title;
+            const content = title + '의 관리자로 초대되었습니다.';
+
+            const sendFcm = await util.sendFcm(
+                title,
+                content,
+                '서버주소/event/' + result4.dataValues.id,
+                fcmList,
+            );
+
+            const sendSms = await util.sendSms(
+                smsList,
+                content,
+            );
 
             responseJson.result = code.SUCCESS;
             responseJson.detail = 'success';
