@@ -4,6 +4,13 @@ const config = require(path.join(__dirname, '.', 'config', 'config.json'))[env];
 const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
 const serviceAccount = require('./serviceAccountKey');
+const serviceId = config.serviceId;
+const serviceKey = config.serviceKey;
+const ncsAccessKey = config.ncsAccessKey;
+const ncsSecretKey = config.ncsSecretKey;
+const apiURL = `https://sens.apigw.ntruss.com/sms/v2/services/${serviceId}/messages`;
+const crypto = require('crypto');
+const axios = require('axios');
 
 const value = {};
 
@@ -79,6 +86,62 @@ value.sendFcm = async function(title, body, link, fbTokenList) {
     catch(exception) {
         console.log(exception);
         return value.code.UNKNOWN_ERROR;
+    }
+};
+
+value.sendSms = async function (phoneList, content) {
+    const hmac = crypto.createHmac('sha256', ncsSecretKey);
+
+    const space = ' '; // one space
+    const newLine = '\n'; // new line
+    const method = 'POST'; // method
+    const timestamp = Date.now().toString();
+
+    const url2 = `/sms/v2/services/${serviceId}/messages`;
+
+    const message = [];
+
+    message.push(method);
+    message.push(space);
+    message.push(url2);
+    message.push(newLine);
+    message.push(timestamp);
+    message.push(newLine);
+    message.push(ncsAccessKey);
+
+    const signature = hmac.update(message.join('')).digest('base64');
+
+    const destination = [];
+    for (let i = 0; i < phoneList.length; i++) {
+        const temp = {
+            'to': phoneList[i],
+        };
+        destination.push(temp);
+    }
+    const reqHeader = {
+        'Content-Type': 'application/json; charset=utf-8',
+        'x-ncp-iam-access-key': ncsAccessKey,
+        'x-ncp-apigw-timestamp': timestamp,
+        'x-ncp-apigw-signature-v2': signature.toString(),
+    };
+
+    const reqBody = {
+        'type': 'SMS', // LMS, MMS
+        'contentType': 'COMM', // 일반 메시지, AD : 광고
+        'countryCode': '82', // 한국
+        'from': '01047335304', // 사전 등록된 발신번호
+        'content': content, // 메시지 내용
+        'messages': destination,
+    };
+
+    try {
+        const result = await axios.post(apiURL, reqBody, {
+            headers: reqHeader,
+        });
+        // console.log(result);
+    }
+    catch (exception) {
+        console.log(exception);
     }
 };
 
