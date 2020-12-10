@@ -50,16 +50,16 @@ router.post('/', async function(req, res, next) {
         const temp1 = [];
         const temp2 = [];
         if(typeof req.body.myFather !== 'undefined') {
-            temp1.push({phone: req.body.myFather, realationship: 'f'});
+            temp1.push({phone: req.body.myFather, relationship: 'f'});
         }
         if(typeof req.body.myMother !== 'undefined') {
-            temp1.push({phone: req.body.myMother, realationship: 'm'});
+            temp1.push({phone: req.body.myMother, relationship: 'm'});
         }
         if(typeof req.body.urFather !== 'undefined') {
-            temp2.push({phone: req.body.urFather, realationship: 'f'});
+            temp2.push({phone: req.body.urFather, relationship: 'f'});
         }
         if(typeof req.body.urMother !== 'undefined') {
-            temp2.push({phone: req.body.urMother, realationship: 'm'});
+            temp2.push({phone: req.body.urMother, relationship: 'm'});
         }
 
         for(let i = 0; i < temp1.length; i++) {
@@ -68,10 +68,10 @@ router.post('/', async function(req, res, next) {
                     {where: {phone_number: temp1[i].phone}},
                 );    
                 if(adminResult == null) {
-                    myAdmin.push({user_id: null, user_phone: temp1[i].phone, realationship: temp1[i].realationship });
+                    myAdmin.push({user_id: null, user_phone: temp1[i].phone, relationship: temp1[i].relationship });
                 }
                 else {
-                    myAdmin.push({user_id: adminResult.id, user_phone: temp1[i].phone, realationship: temp1[i].realationship});
+                    myAdmin.push({user_id: adminResult.id, user_phone: temp1[i].phone, relationship: temp1[i].relationship});
                 }
             }
             else {
@@ -87,10 +87,10 @@ router.post('/', async function(req, res, next) {
                     {where: {phone_number: temp2[i].phone}},
                 );    
                 if(adminResult == null) {
-                    urAdmin.push({user_id: null, user_phone: temp2[i].phone, realationship: temp2[i].realationship});
+                    urAdmin.push({user_id: null, user_phone: temp2[i].phone, relationship: temp2[i].relationship});
                 }
                 else {
-                    urAdmin.push({user_id: adminResult.id, user_phone: temp2[i].phone, realationship: temp2[i].realationship});
+                    urAdmin.push({user_id: adminResult.id, user_phone: temp2[i].phone, relationship: temp2[i].relationship});
                 }
             }
             else {
@@ -183,7 +183,7 @@ router.post('/', async function(req, res, next) {
                     transaction
                 },
             );
-            const encrypt2 = crypto.createHash('sha256').update(eventId + ' ').digest('hex');
+            const encrypt2 = crypto.createHash('sha256').update(pEventId + ' ').digest('hex');
             const updateResult2 = await Event.update(
                 {
                     event_hash: encrypt2,
@@ -196,7 +196,7 @@ router.post('/', async function(req, res, next) {
                     transaction
                 },
             );
-            const admins = [];
+            console.log(myAdmin)
             for(let i = 0; i < myAdmin.length; i++) {
                 myAdmin[i].event_id = eventId;
             }
