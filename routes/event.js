@@ -138,7 +138,6 @@ router.post('/', async function(req, res, next) {
         res.locals.urAdmin = urAdmin;
         next();
     }
-
     else {
         const eventAdmin = req.body.eventAdmin;
 
@@ -219,7 +218,7 @@ router.post('/', async function(req, res, next) {
                     transaction,
                 },
             );
-            console.log(myAdmin);
+
             for(let i = 0; i < myAdmin.length; i++) {
                 myAdmin[i].event_id = eventId;
             }
