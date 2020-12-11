@@ -28,9 +28,9 @@ adminCheck = async function(userId, eventId) {
 router.get('/event/:eventId', async function(req, res, next) {
     const responseJson = {};
     const eventId = req.params.eventId;
-    const isMaster = !await masterCheck(res.locals.user.id, eventId);
-    const isAdmin = !await adminCheck(res.locals.user.id, eventId);
-    if(isMaster && isAdmin) {
+    const isMaster = await masterCheck(res.locals.user.id, eventId);
+    const isAdmin = await adminCheck(res.locals.user.id, eventId);
+    if(!isMaster && !isAdmin) {
         responseJson.result = code.NO_AUTH;
         responseJson.detail = 'no auth';
         res.json(responseJson);
