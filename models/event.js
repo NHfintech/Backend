@@ -59,7 +59,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             allowNull: true,
             unique: true,
-        }
+        },
     },
     {
         timestamps: false,

@@ -117,8 +117,8 @@ router.post('/', async function(req, res, next) {
         responseJson.result= code.SUCCESS;
         responseJson.detail= 'finaccount create success';
         responseJson.data = {
-            fin_account: finAcno
-        }
+            fin_account: finAcno,
+        };
         res.json(responseJson);
     }
     catch (error) {
@@ -264,6 +264,7 @@ router.post('/receive', async function(req, res, next) {
             res.json(responseJson);
             return;
         }
+      
         if(result.dataValues.is_received) {
             responseJson.result = code.UNKNOWN_ERROR;
             responseJson.detail = 'already received';
@@ -311,8 +312,14 @@ router.post('/receive', async function(req, res, next) {
             },
         );
         const tram = result[0].dataValues.totalMoney;
+        let apiNm = '';
+        if(apiNm === '011' || apiNm === '012') {
+            apiNm = 'ReceivedTransferAccountNumber';
+        }
+        else {
+            apiNm = 'ReceivedTransferOtherBank';
+        }
 
-        const apiNm = 'ReceivedTransferAccountNumber';
         const body = {
             'Bncd': bncd,
             'Acno': acno,
@@ -325,7 +332,14 @@ router.post('/receive', async function(req, res, next) {
 
         const nhResult = await axios.post(getNHURL(apiNm), body);
 
-        next();
+        if(nhResult.data.Header.Rpcd !== '00000') {
+            responseJson.result = code.NH_API_ERROR;
+            responseJson.detail = result.data.Header.Rsms;
+            res.json(responseJson);
+        }
+        else {
+            next();
+        }
     }
     catch(exception) {
         responseJson.result = code.NH_API_ERROR;

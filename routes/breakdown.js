@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const moment = require('moment');
 
-const {BreakDown, User, Event} = require('../models');
+const {BreakDown, User, Event, EventAdmin} = require('../models');
 const util = require('../utils');
 const code = util.code;
 
@@ -13,10 +13,24 @@ masterCheck = async function(userId, eventId) {
     return check !== null;
 };
 
+adminCheck = async function(userId, eventId) {
+    const check = await EventAdmin.findOne(
+        {
+            where: {
+                user_id: userId,
+                event_id: eventId,
+            },
+        },
+    );
+    return check !== null;
+};
+
 router.get('/event/:eventId', async function(req, res, next) {
     const responseJson = {};
     const eventId = req.params.eventId;
-    if(!await masterCheck(res.locals.user.id, eventId)) {
+    const isMaster = await masterCheck(res.locals.user.id, eventId);
+    const isAdmin = await adminCheck(res.locals.user.id, eventId);
+    if(!isMaster && !isAdmin) {
         responseJson.result = code.NO_AUTH;
         responseJson.detail = 'no auth';
         res.json(responseJson);
@@ -60,7 +74,7 @@ router.get('/event/:eventId', async function(req, res, next) {
             {
                 where: {
                     event_id: eventId,
-                    sender_id: 0,
+                    is_direct_input: false,
                 },
                 attributes: ['id', 'sender_name', 'transfer_datetime', 'message', 'money'],
             },
@@ -107,7 +121,7 @@ router.get('/sender', async function(req, res, next) {
                         where: {
                             sender_id: userId,
                         },
-                        attributes: ['transfer_datetime', 'message', 'money'],
+                        attributes: ['event_id', 'sender_name', 'transfer_datetime', 'message', 'money', 'is_direct_input'],
                     },
                 ],
                 attributes: ['title'],
@@ -120,11 +134,14 @@ router.get('/sender', async function(req, res, next) {
             const {breakdowns} = result[i].dataValues;
             for(let j = 0; j < breakdowns.length; j++) {
                 const temp = {};
-                const {transfer_datetime, message, money} = breakdowns[j];
+                const {event_id, sender_name, transfer_datetime, message, money, is_direct_input} = breakdowns[j];
                 temp.title = result[i].dataValues.title;
+                temp.event_id = event_id;
+                temp.sender_name = sender_name;
                 temp.transfer_datetime = transfer_datetime;
                 temp.message = message;
                 temp.money = money;
+                temp.is_direct_input = is_direct_input;
 
                 list.push(temp);
             }

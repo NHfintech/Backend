@@ -52,7 +52,7 @@ router.get('/overlap/username', async function(req, res, next) {
 // 회원가입
 router.post('/signup', async function(req, res, next) {
     const responseJson = {};
-    let transaction = await sequelize.transaction();
+    const transaction = await sequelize.transaction();
     try {
         if(util.phoneNumberCheck(req.body.phone_number)) {
             const bcPw = bcrypt.hashSync(req.body.password, util.saltRounds);
@@ -79,8 +79,8 @@ router.post('/signup', async function(req, res, next) {
                         where: {
                             user_phone: req.body.phone_number,
                         },
-                        transaction
-                    }
+                        transaction,
+                    },
                 );
             }
             await transaction.commit();
@@ -92,7 +92,7 @@ router.post('/signup', async function(req, res, next) {
     }
     catch(exception) {
         if (transaction) {
-             await transaction.rollback();
+            await transaction.rollback();
         }
         responseJson.result = code.UNKNOWN_ERROR;
         responseJson.detail = 'sign up error';

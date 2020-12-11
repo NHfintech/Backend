@@ -1,4 +1,4 @@
-{ 
+{
     "development": {
         "dbOptions": {
             "username": "root",
@@ -18,5 +18,9 @@
         "iscd": "기관코드",
         "accessToken": "액세스 토큰",
         "BrdtBrno": "생년월일 or 사업자번호"
+        "serviceId": "네이버 sms 서비스 아이디",
+        "serviceKey": "네이버 sms 서비스 키",
+        "ncsAccessKey": "네이버 개발자 access key",
+        "ncsSecretKey": "네이버 개발자 secret key"
     }
 }

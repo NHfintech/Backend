@@ -27,6 +27,40 @@ adminCheck = async function(userId, eventId) {
     return check !== null;
 };
 
+
+getUsersByPhones = async function(phones) {
+    let resJson = null;
+    const admin = [];
+    for (let i = 0; i < phones.length; i++) {
+        if (util.phoneNumberCheck(phones[i])) {
+            const adminResult = await User.findOne(
+                {where: {phone_number: phones[i]}},
+            );
+
+            if (adminResult == null) {
+                admin.push({user_id: null, user_phone: phones[i]});
+            }
+            else {
+                admin.push({
+                    user_id: adminResult.id,
+                    user_phone: phones[i],
+                });
+            }
+        }
+        else {
+            resJson = {};
+            resJson.result = code.PHONE_NUMBER_INVALID;
+            resJson.detail = 'phone number invalid';
+            break;
+        }
+    }
+
+    return {
+        responseJson: resJson,
+        admin: admin,
+    };
+};
+
 // post1 : check phonenubmer
 router.post('/', async function(req, res, next) {
     const responseJson = {};
@@ -66,9 +100,9 @@ router.post('/', async function(req, res, next) {
             if(util.phoneNumberCheck(temp1[i].phone)) {
                 const adminResult = await User.findOne(
                     {where: {phone_number: temp1[i].phone}},
-                );    
+                );
                 if(adminResult == null) {
-                    myAdmin.push({user_id: null, user_phone: temp1[i].phone, relationship: temp1[i].relationship });
+                    myAdmin.push({user_id: null, user_phone: temp1[i].phone, relationship: temp1[i].relationship});
                 }
                 else {
                     myAdmin.push({user_id: adminResult.id, user_phone: temp1[i].phone, relationship: temp1[i].relationship});
@@ -85,7 +119,7 @@ router.post('/', async function(req, res, next) {
             if(util.phoneNumberCheck(temp2[i].phone)) {
                 const adminResult = await User.findOne(
                     {where: {phone_number: temp2[i].phone}},
-                );    
+                );
                 if(adminResult == null) {
                     urAdmin.push({user_id: null, user_phone: temp2[i].phone, relationship: temp2[i].relationship});
                 }
@@ -105,25 +139,13 @@ router.post('/', async function(req, res, next) {
         next();
     }
     else {
-        for(let i = 0; i < eventAdmin.length; i++) {
-            if(util.phoneNumberCheck(eventAdmin[i])) {
-                const adminResult = await User.findOne(
-                    {where: {phone_number: eventAdmin[i]}},
-                );
+        const eventAdmin = req.body.eventAdmin;
 
-                if(adminResult == null) {
-                    admin.push({user_id: null, user_phone: eventAdmin[i]});
-                }
-                else {
-                    admin.push({user_id: adminResult.id, user_phone: eventAdmin[i]});
-                }
-            }
-            else {
-                responseJson.result = code.PHONE_NUMBER_INVALID;
-                responseJson.detail = 'phone number invalid';
-                res.json(responseJson);
-                return;
-            }
+        const {responseJson, admin} = await getUsersByPhones(eventAdmin);
+
+        if(responseJson) {
+            res.json(responseJson);
+            return;
         }
         res.locals.admins = admin;
         next();
@@ -140,7 +162,7 @@ router.post('/', async function(req, res, next) {
         const myAdmin = res.locals.myAdmin;
         const urAdmin = res.locals.urAdmin;
         const partnerId = res.locals.partnerId;
-        let transaction = await sequelize.transaction();
+        const transaction = await sequelize.transaction();
         try {
             const result = await Event.create(
                 {
@@ -152,8 +174,8 @@ router.post('/', async function(req, res, next) {
                     invitation_url: body.invitationUrl,
                     event_datetime: body.eventDatetime,
                     is_activated: true,
-                }, 
-                { transaction }
+                },
+                {transaction},
             );
             const result2 = await Event.create(
                 {
@@ -165,8 +187,8 @@ router.post('/', async function(req, res, next) {
                     invitation_url: body.invitationUrl,
                     event_datetime: body.eventDatetime,
                     is_activated: true,
-                }, 
-                { transaction }
+                },
+                {transaction},
             );
             const eventId = result.dataValues.id;
             const pEventId = result2.dataValues.id;
@@ -174,29 +196,29 @@ router.post('/', async function(req, res, next) {
             const updateResult = await Event.update(
                 {
                     event_hash: encrypt,
-                    pair_id: pEventId
+                    pair_id: pEventId,
                 },
                 {
                     where: {
                         id: eventId,
                     },
-                    transaction
+                    transaction,
                 },
             );
             const encrypt2 = crypto.createHash('sha256').update(pEventId + ' ').digest('hex');
             const updateResult2 = await Event.update(
                 {
                     event_hash: encrypt2,
-                    pair_id: eventId
+                    pair_id: eventId,
                 },
                 {
                     where: {
                         id: pEventId,
                     },
-                    transaction
+                    transaction,
                 },
             );
-            console.log(myAdmin)
+
             for(let i = 0; i < myAdmin.length; i++) {
                 myAdmin[i].event_id = eventId;
             }
@@ -204,8 +226,8 @@ router.post('/', async function(req, res, next) {
                 urAdmin[i].event_id = pEventId;
             }
 
-            //event admin insert
-            const result3 = await EventAdmin.bulkCreate(myAdmin, { transaction });
+            // event admin insert
+            const result3 = await EventAdmin.bulkCreate(myAdmin, {transaction});
             const myUserAdmin = [];
             const myNoUserAdmin = [];
             for(let i = 0; i < result3.length; i++) {
@@ -222,7 +244,7 @@ router.post('/', async function(req, res, next) {
                 noUser: myNoUserAdmin,
             };
 
-            const result4 = await EventAdmin.bulkCreate(urAdmin, { transaction });
+            const result4 = await EventAdmin.bulkCreate(urAdmin, {transaction});
             const urUserAdmin = [];
             const urNoUserAdmin = [];
             for(let i = 0; i < result3.length; i++) {
@@ -239,7 +261,7 @@ router.post('/', async function(req, res, next) {
                 noUser: urNoUserAdmin,
             };
 
-            //for fcm 
+            // for fcm
             res.locals.eventId = eventId;
             res.locals.pEventId = pEventId;
             res.locals.title = result.dataValues.title;
@@ -258,10 +280,11 @@ router.post('/', async function(req, res, next) {
             responseJson.detail = 'event create db error';
             res.json(responseJson);
         }
-    } 
+    }
     else {
         const admins = res.locals.admins;
-        let transaction = await sequelize.transaction();
+        const transaction = await sequelize.transaction();
+
         try {
             const result = await Event.create(
                 {
@@ -273,10 +296,17 @@ router.post('/', async function(req, res, next) {
                     invitation_url: body.invitationUrl,
                     event_datetime: body.eventDatetime,
                     is_activated: true,
-                }, 
-                { transaction }
+                },
+                {transaction},
             );
             const eventId = result.dataValues.id;
+            res.locals.eventId = eventId;
+            res.locals.title = result.dataValues.title;
+            res.locals.eventDatetime = result.dataValues.event_datetime;
+
+            for(let i = 0; i < admins.length; i++) {
+                admins[i].event_id = eventId;
+            }
             const encrypt = crypto.createHash('sha256').update(eventId + ' ').digest('hex');
             const updateResult = await Event.update(
                 {
@@ -286,17 +316,16 @@ router.post('/', async function(req, res, next) {
                     where: {
                         id: eventId,
                     },
-                    transaction
+                    transaction,
                 },
             );
-            for(let i = 0; i < admins.length; i++) {
-                admins[i].event_id = eventId;
-            }
 
-            //event admin insert
-            const result2 = await EventAdmin.bulkCreate(admins, { transaction });
+            // event admin insert
+            const result2 = await EventAdmin.bulkCreate(admins, {transaction});
+
             const userAdmin = [];
             const noUserAdmin = [];
+
             for(let i = 0; i < result2.length; i++) {
                 const temp = result2[i].dataValues;
                 if(temp.user_id === null) {
@@ -311,10 +340,6 @@ router.post('/', async function(req, res, next) {
                 noUser: noUserAdmin,
             };
 
-            //for fcm 
-            res.locals.eventId = eventId;
-            res.locals.title = result.dataValues.title;
-            res.locals.eventDatetime = result.dataValues.event_datetime;
             res.locals.adminIds = eventAdmins;
             await transaction.commit();
             next();
@@ -323,7 +348,7 @@ router.post('/', async function(req, res, next) {
             console.log(exception);
             if (transaction) {
                 await transaction.rollback();
-        }
+            }
             responseJson.result = code.UNKNOWN_ERROR;
             responseJson.detail = 'event create db error';
             res.json(responseJson);
@@ -361,10 +386,14 @@ router.post('/', async function(req, res, next) {
             }
         }
 
+        const title = res.locals.title;
+        const content = res.locals.title + '의 관리자로 초대되었습니다.';
+        const link = '서버주소/event/' + res.locals.pEventId;
+
         if(fbTokens.length !== 0) {
             const fcm = await util.sendFcm(
-                res.locals.title,
-                res.locals.title + '의 관리자로 초대되었습니다.\n' + '시간 : ' + res.locals.eventDatetime + '\n',
+                title,
+                content,
                 '서버주소/event/' + res.locals.eventId,
                 fbTokens,
             );
@@ -379,7 +408,7 @@ router.post('/', async function(req, res, next) {
                     attributes: ['id', 'phone_number', 'firebase_token'],
                 },
             );
-    
+
             const fbTokens2 = [];
             for(let i = 0; i < result2.length; i++) {
                 const temp = result2[i].dataValues.firebase_token;
@@ -390,20 +419,31 @@ router.post('/', async function(req, res, next) {
                     pAdminIds.noUser.push(result2[i].dataValues.phone_number);
                 }
             }
-    
+
             if(fbTokens2.length !== 0) {
                 const fcm = await util.sendFcm(
                     res.locals.title,
                     res.locals.title + '의 관리자로 초대되었습니다.\n' + '시간 : ' + res.locals.eventDatetime + '\n',
-                    '서버주소/event/' + res.locals.pEventId,
+                    link,
                     fbTokens2,
                 );
             }
 
+            if(pAdminIds.noUser.length !== 0) {
+                const sms = await util.sendSms(
+                    adminIds.noUser,
+                    content + '\n' + link,
+                );
+            }
         }
 
         // TODO : admins.noUser = 회원가입 안된 사람들 문자로
-        // TODO : pAdminIds.noUser = 같이 ㄱㄱ
+        if(adminIds.noUser.length !== 0) {
+            const sms = await util.sendSms(
+                adminIds.noUser,
+                content + '\n' + link,
+            );
+        }
 
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'success';
@@ -419,23 +459,55 @@ router.post('/', async function(req, res, next) {
     }
 });
 
+// TODO : 결혼식일 때, event admin 수정하는 작업 하기
 router.put('/:id', async function(req, res, next) {
     const responseJson = {};
     const body = req.body;
     const userId = res.locals.user.id;
     const eventId = req.params.id;
-    
-    let transaction = await sequelize.transaction();
+    const transaction = await sequelize.transaction();
+
     try {
         if(await masterCheck(userId, eventId)) {
+            const {resJson, admin} = await getUsersByPhones(body.eventAdmin);
+
+            if(resJson) {
+                res.json(resJson);
+                return;
+            }
+
             const result = await Event.findOne(
                 {where: {id: eventId}},
             );
-            if(result.dataValues.is_activated == 0) {
+
+            if(result.dataValues.is_activated === 0) {
                 responseJson.result = code.UNKNOWN_ERROR;
                 responseJson.detail = 'event is terminated';
+                res.json(responseJson);
+                return;
             }
-            else {
+
+            for(let i = 0; i < admin.length; i++) {
+                admin[i].event_id = eventId;
+            }
+
+            const result1 = await Event.update(
+                {
+                    title: body.title,
+                    location: body.location,
+                    body: body.body,
+                    invitation_url: body.invitationUrl,
+                    event_datetime: body.eventDatetime,
+                },
+                {
+                    where: {
+                        id: eventId,
+                    },
+                    transaction,
+                },
+            );
+
+            if(result.dataValues.pair_id !== null) {
                 await Event.update(
                     {
                         title: body.title,
@@ -446,32 +518,67 @@ router.put('/:id', async function(req, res, next) {
                     },
                     {
                         where: {
-                            id: eventId,
+                            id: result.dataValues.pair_id,
                         },
-                        transaction
+                        transaction,
                     },
                 );
-                if(result.dataValues.pair_id !== null) {
-                    await Event.update(
-                        {
-                            title: body.title,
-                            location: body.location,
-                            body: body.body,
-                            invitation_url: body.invitationUrl,
-                            event_datetime: body.eventDatetime,
-                        },
+            }
+            else {
+                const smsList = [];
+                const fcmList = [];
+
+                for (let i = 0; i < admin.length; i++) {
+                    const result2 = await EventAdmin.findOne(
                         {
                             where: {
-                                id: result.dataValues.pair_id,
+                                user_id: admin[i].user_id,
+                                event_id: admin[i].event_id,
+                                user_phone: admin[i].user_phone,
                             },
-                            transaction
                         },
                     );
+                    if (result2 === null) {
+                        if (admin[i].user_id === null) {
+                            smsList.push(admin[i].user_phone);
+                        }
+                        else {
+                            const result3 = await User.findOne(
+                                {
+                                    where: {
+                                        id: admin[i].user_id,
+                                    },
+                                    attributes: ['firebase_token'],
+                                },
+                            );
+
+                            fcmList.push(result3.firebase_token);
+                        }
+                    }
                 }
-                responseJson.result = code.SUCCESS;
-                responseJson.detail = 'success';            
-                await transaction.commit();
+
+                const title = body.title;
+                const content = title + '의 관리자로 초대되었습니다.';
+                const link = '서버주소/event/' + eventId;
+
+                if (fcmList.length !== 0) {
+                    const sendFcm = await util.sendFcm(
+                        title,
+                        content,
+                        link,
+                        fcmList,
+                    );
+                }
+
+                if (smsList.length !== 0) {
+                    const sendSms = await util.sendSms(
+                        smsList,
+                        content + '\n' + link,
+                    );
+                }
             }
+            responseJson.result = code.SUCCESS;
+            responseJson.detail = 'success';
         }
         else {
             responseJson.result = code.NO_AUTH;
@@ -482,8 +589,8 @@ router.put('/:id', async function(req, res, next) {
         if (transaction) {
             await transaction.rollback();
         }
-        responseJson.result = code.UNKNOWN_ERROR;
-        responseJson.detail = 'unknown error';
+        responseJson.result = code.DB_ERROR;
+        responseJson.detail = 'event or eventadmin update error';
     }
     finally {
         res.json(responseJson);
@@ -494,7 +601,7 @@ router.delete('/:id', async function(req, res, next) {
     const responseJson = {};
     const eventId = req.params.id;
     const myId = res.locals.user.id;
-    let transaction = await sequelize.transaction();
+    const transaction = await sequelize.transaction();
     try {
         if(await masterCheck(myId, eventId)) {
             const result = await Event.findOne(
@@ -506,11 +613,11 @@ router.delete('/:id', async function(req, res, next) {
             }
             else {
                 const bdResult = await BreakDown.findOne(
-                    {where: 
+                    {where:
                         {
                             event_id: eventId,
-                            is_direct_input: 0
-                        }
+                            is_direct_input: 0,
+                        },
                     });
                 if(bdResult !== null) {
                     responseJson.result = code.UNKNOWN_ERROR;
@@ -519,10 +626,10 @@ router.delete('/:id', async function(req, res, next) {
                 else {
                     await Event.destroy(
                         {where: {id: eventId}, transaction},
-                    );    
+                    );
                     await EventAdmin.destroy(
                         {where: {event_id: eventId}, transaction},
-                    );    
+                    );
                     await transaction.commit();
                     responseJson.result = code.SUCCESS;
                     responseJson.detail = 'success';
@@ -647,10 +754,10 @@ router.get('/:id', async function(req, res, next) {
             }
             else {
                 if(await adminCheck(myId, eventId)) {
-                    data.userType = 'admin'
+                    data.userType = 'admin';
                 }
                 else if(await guestCheck(myId, eventId)) {
-                    data.userType = 'guest'
+                    data.userType = 'guest';
                 }
             }
             if(typeof data.userType !== 'undefined') {
@@ -738,23 +845,23 @@ router.get('/invite/:hash', async function(req, res, next) {
             if(hostCheck) {
                 const data = {event_id: eventId};
                 if(result.dataValues.user_id == myId) {
-                    data.userType = 'master';                
+                    data.userType = 'master';
                 }
                 else {
                     if(await adminCheck(myId, eventId)) {
-                        data.userType = 'admin'
+                        data.userType = 'admin';
                     }
                     else {
-                        data.userType = 'guest'
+                        data.userType = 'guest';
                     }
                 }
                 if(data.userType === 'guest') {
                     const result2 = await Guest.findOrCreate({
-                        where:{
+                        where: {
                             user_id: myId,
                             event_id: eventId,
                             eventAdmin_id: hostId,
-                        }
+                        },
                     });
                 }
                 responseJson.result = code.SUCCESS;
