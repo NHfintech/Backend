@@ -11,7 +11,7 @@ const ncsSecretKey = config.ncsSecretKey;
 const apiURL = `https://sens.apigw.ntruss.com/sms/v2/services/${serviceId}/messages`;
 const crypto = require('crypto');
 const axios = require('axios');
-const {User, Event, BreakDown, Guest} = require('./models');
+const {Event, EventAdmin, Guest} = require('./models');
 
 const value = {};
 

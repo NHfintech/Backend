@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const moment = require('moment');
-const {BreakDown, User, Event, EventAdmin} = require('../models');
+const {BreakDown, User, Event} = require('../models');
 const util = require('../utils');
 const code = util.code;
 
