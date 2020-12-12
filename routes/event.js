@@ -488,7 +488,7 @@ router.put('/:id', async function(req, res, next) {
                     where: {
                         id: eventId,
                     },
-                    // transaction,
+                    transaction,
                 },
             );
 
@@ -506,7 +506,7 @@ router.put('/:id', async function(req, res, next) {
                         where: {
                             id: result.dataValues.pair_id,
                         },
-                        // transaction,
+                        transaction,
                     },
                 );
             }
@@ -525,6 +525,14 @@ router.put('/:id', async function(req, res, next) {
                         },
                     );
                     if (result2 === null) {
+                        const result4 = await EventAdmin.create(
+                            {
+                                user_id: admin[i].user_id,
+                                user_phone: admin[i].user_phone,
+                                event_id: admin[i].event_id,
+                            },
+                            {transaction},
+                        );
                         if (admin[i].user_id === null) {
                             smsList.push(admin[i].user_phone);
                         }
@@ -537,7 +545,6 @@ router.put('/:id', async function(req, res, next) {
                                     attributes: ['firebase_token'],
                                 },
                             );
-
                             fcmList.push(result3.firebase_token);
                         }
                     }
@@ -566,6 +573,7 @@ router.put('/:id', async function(req, res, next) {
             }
             responseJson.result = code.SUCCESS;
             responseJson.detail = 'success';
+            await transaction.commit();
         }
         else {
             responseJson.result = code.NO_AUTH;
