@@ -96,6 +96,7 @@ router.post('/signup', async function(req, res, next) {
         }
         responseJson.result = code.UNKNOWN_ERROR;
         responseJson.detail = 'sign up error';
+        responseJson.data = exception.errors[0].message;
     }
     finally {
         res.json(responseJson);
