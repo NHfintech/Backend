@@ -7,7 +7,7 @@ const moment = require('moment');
 const axios = require('axios');
 const sequelize = require('sequelize');
 
-const {User, Event, BreakDown} = require('../models');
+const {User, Event, BreakDown, Guest} = require('../models');
 const util = require('../utils');
 const code = util.code;
 
@@ -41,7 +41,7 @@ getNHURL = function(apiNm) {
 router.post('/', async function(req, res, next) {
     const responseJson= {};
     try {
-        const userId = res.locals.user.id;
+        const myId = res.locals.user.id;
         const apiNm = 'OpenFinAccountDirect';
         const body= {
             'DrtrRgyn': 'Y',
@@ -49,7 +49,7 @@ router.post('/', async function(req, res, next) {
             'Bncd': req.body.bncd,
             'Acno': req.body.acno,
         };
-        body.Header= createBodyHeader(apiNm, userId);
+        body.Header= createBodyHeader(apiNm, myId);
         const result = await axios.post(getNHURL(apiNm), body);
         if(result.data.Header.Rpcd !== '00000') {
             responseJson.result = code.NH_API_ERROR;
@@ -71,7 +71,7 @@ router.post('/', async function(req, res, next) {
 router.post('/', async function(req, res, next) {
     const responseJson= {};
     try {
-        const userId = res.locals.user.id;
+        const myId = res.locals.user.id;
         const rgno = res.locals.Rgno;
 
         const apiNm = 'CheckOpenFinAccountDirect';
@@ -79,7 +79,7 @@ router.post('/', async function(req, res, next) {
             'Rgno': rgno,
             'BrdtBrno': config.BrdtBrno,
         };
-        body.Header= createBodyHeader(apiNm, userId);
+        body.Header= createBodyHeader(apiNm, myId);
         const result = await axios.post(getNHURL(apiNm), body);
         if(result.data.Header.Rpcd !== '00000') {
             responseJson.result = code.NH_API_ERROR;
@@ -102,7 +102,7 @@ router.post('/', async function(req, res, next) {
 router.post('/', async function(req, res, next) {
     const responseJson= {};
     try {
-        const userId = res.locals.user.id;
+        const myId = res.locals.user.id;
         const finAcno = res.locals.FinAcno;
 
         const result = await User.update(
@@ -111,7 +111,7 @@ router.post('/', async function(req, res, next) {
             },
             {
                 where: {
-                    id: userId,
+                    id: myId,
                 },
             });
         responseJson.result= code.SUCCESS;
@@ -135,7 +135,7 @@ router.post('/transfer', async function(req, res, next) {
     try {
         // get event id from db
         const result = await Event.findOne(
-            {attributes: ['id'], where: {event_hash: event_hash}},
+            {attributes: ['id', 'user_id'], where: {event_hash: event_hash}},
         );
 
         if(result === null) {
@@ -145,10 +145,11 @@ router.post('/transfer', async function(req, res, next) {
             return;
         }
         res.locals.eventId = result.dataValues.id;
+        res.locals.masterId = result.dataValues.user_id;
         // get finAcno
-        const userId = res.locals.user.id;
+        const myId = res.locals.user.id;
         const result2 = await User.findOne(
-            {attributes: ['fin_account'], where: {id: userId}},
+            {attributes: ['fin_account'], where: {id: myId}},
         );
 
         if(result2 === null) {
@@ -171,7 +172,7 @@ router.post('/transfer', async function(req, res, next) {
     const responseJson= {};
     const {tram} = req.body;
     try {
-        const userId = res.locals.user.id;
+        const myId = res.locals.user.id;
         const apiNm = 'DrawingTransfer';
         const body= {
             'FinAcno': res.locals.finAccount,
@@ -179,7 +180,7 @@ router.post('/transfer', async function(req, res, next) {
             'DractOtlt': '부조금 출금',
         };
 
-        body.Header= createBodyHeader(apiNm, userId);
+        body.Header= createBodyHeader(apiNm, myId);
         const result = await axios.post(getNHURL(apiNm), body);
         if(result.data.Header.Rpcd !== '00000') {
             responseJson.result = code.NH_API_ERROR;
@@ -204,16 +205,17 @@ router.post('/transfer', async function(req, res, next) {
 router.post('/transfer', async function(req, res, next) {
     const responseJson= {};
     let {tram, message} = req.body;
-    const userId = res.locals.user.id;
+    const myId = res.locals.user.id;
     const transferTime= res.locals.transferTime;
     const eventId = res.locals.eventId;
+    const masterId = res.locals.masterId;
     // message error avoid
     if(message.length > 45) {
         message = message.substring(0, 45);
     }
     const data = {
         event_id: eventId,
-        sender_id: userId,
+        sender_id: myId,
         transfer_datetime: transferTime,
         message: message,
         money: tram,
@@ -221,7 +223,14 @@ router.post('/transfer', async function(req, res, next) {
     };
 
     try {
-        const result = await BreakDown.create(data);
+        await BreakDown.create(data);
+        if(!await util.guestCheck(myId, eventId)) {
+            const result = await Guest.create({
+                user_id: myId,
+                event_id: eventId,
+                eventAdmin_id: masterId,
+            });
+        }
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'transfer success';
         responseJson.data = {event_id: eventId};
@@ -239,7 +248,7 @@ router.post('/transfer', async function(req, res, next) {
 router.post('/receive', async function(req, res, next) {
     const responseJson = {};
     const {event_hash} = req.body;
-
+    const myId = res.locals.user.id;
     try {
         const result = await Event.findOne(
             {
@@ -272,7 +281,7 @@ router.post('/receive', async function(req, res, next) {
             return;
         }
 
-        if(result.dataValues.user_id !== res.locals.user.id) {
+        if(result.dataValues.user_id !== myId) {
             responseJson.result = code.NO_AUTH;
             responseJson.detail = 'no auth';
             res.json(responseJson);
@@ -294,7 +303,7 @@ router.post('/receive', async function(req, res, next) {
 router.post('/receive', async function(req, res, next) {
     const responseJson = {};
     const {bncd, acno} = req.body;
-
+    const myId = res.locals.user.id;
     try {
         const result = await BreakDown.findAll(
             {
@@ -328,7 +337,7 @@ router.post('/receive', async function(req, res, next) {
             'MractOtlt': res.locals.title + ' 정산금',
         };
 
-        body.Header = createBodyHeader(apiNm, res.locals.user.id);
+        body.Header = createBodyHeader(apiNm, myId);
 
         const nhResult = await axios.post(getNHURL(apiNm), body);
 

@@ -1,35 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const moment = require('moment');
-
-const {BreakDown, User, Event, EventAdmin} = require('../models');
+const {BreakDown, User, Event} = require('../models');
 const util = require('../utils');
 const code = util.code;
-
-masterCheck = async function(userId, eventId) {
-    const check = await Event.findOne({
-        where: {user_id: userId, id: eventId},
-    });
-    return check !== null;
-};
-
-adminCheck = async function(userId, eventId) {
-    const check = await EventAdmin.findOne(
-        {
-            where: {
-                user_id: userId,
-                event_id: eventId,
-            },
-        },
-    );
-    return check !== null;
-};
 
 router.get('/event/:eventId', async function(req, res, next) {
     const responseJson = {};
     const eventId = req.params.eventId;
-    const isMaster = await masterCheck(res.locals.user.id, eventId);
-    const isAdmin = await adminCheck(res.locals.user.id, eventId);
+    const myId = res.locals.user.id;
+    const isMaster = await util.masterCheck(myId, eventId);
+    const isAdmin = await util.adminCheck(myId, eventId);
     if(!isMaster && !isAdmin) {
         responseJson.result = code.NO_AUTH;
         responseJson.detail = 'no auth';
@@ -110,7 +91,7 @@ router.get('/event/:eventId', async function(req, res, next) {
 
 router.get('/sender', async function(req, res, next) {
     const responseJson = {};
-    const userId = res.locals.user.id;
+    const myId = res.locals.user.id;
 
     try {
         const result = await Event.findAll(
@@ -119,7 +100,7 @@ router.get('/sender', async function(req, res, next) {
                     {
                         model: BreakDown,
                         where: {
-                            sender_id: userId,
+                            sender_id: myId,
                         },
                         attributes: ['event_id', 'sender_name', 'transfer_datetime', 'message', 'money', 'is_direct_input'],
                     },
@@ -163,7 +144,8 @@ router.get('/sender', async function(req, res, next) {
 router.post('/', async function(req, res, next) {
     const responseJson = {};
     const {name, eventId, money} = req.body;
-    if(!await masterCheck(res.locals.user.id, eventId)) {
+    const myId = res.locals.user.id;
+    if(!await util.masterCheck(myId, eventId)) {
         responseJson.result = code.NO_AUTH;
         responseJson.detail = 'no auth';
         res.json(responseJson);
@@ -197,7 +179,7 @@ router.post('/', async function(req, res, next) {
 
 router.delete('/:id', async function(req, res, next) {
     const responseJson = {};
-
+    const myId = res.locals.user.id;
     try {
         const result = await BreakDown.findOne(
             {
@@ -210,7 +192,7 @@ router.delete('/:id', async function(req, res, next) {
 
         const eventId = result.dataValues.event_id;
 
-        if(!await masterCheck(res.locals.user.id, eventId)) {
+        if(!await util.masterCheck(myId, eventId)) {
             responseJson.result = code.NO_AUTH;
             responseJson.detail = 'no auth';
             res.json(responseJson);

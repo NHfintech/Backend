@@ -11,6 +11,7 @@ const ncsSecretKey = config.ncsSecretKey;
 const apiURL = `https://sens.apigw.ntruss.com/sms/v2/services/${serviceId}/messages`;
 const crypto = require('crypto');
 const axios = require('axios');
+const {Event, EventAdmin, Guest} = require('./models');
 
 const value = {};
 
@@ -18,6 +19,27 @@ admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     databaseURL: 'https://kkotgil-bdb2e.firebaseio.com',
 });
+
+value.masterCheck = async function(userId, eventId) {
+    const check = await Event.findOne({
+        where: {user_id: userId, id: eventId},
+    });
+    return check !== null;
+};
+
+value.guestCheck = async function(userId, eventId) {
+    const check = await Guest.findOne({
+        where: {user_id: userId, event_id: eventId},
+    });
+    return check !== null;
+};
+
+value.adminCheck = async function(userId, eventId) {
+    const check = await EventAdmin.findOne({
+        where: {user_id: userId, event_id: eventId},
+    });
+    return check !== null;
+};
 
 value.code = {
     'UNKNOWN_ERROR': -1,

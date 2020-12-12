@@ -5,29 +5,6 @@ const {sequelize, User, Event, EventAdmin, Guest, BreakDown} = require('../model
 const util = require('../utils');
 const code = util.code;
 
-
-masterCheck = async function(userId, eventId) {
-    const check = await Event.findOne({
-        where: {user_id: userId, id: eventId},
-    });
-    return check !== null;
-};
-
-guestCheck = async function(userId, eventId) {
-    const check = await Guest.findOne({
-        where: {user_id: userId, event_id: eventId},
-    });
-    return check !== null;
-};
-
-adminCheck = async function(userId, eventId) {
-    const check = await EventAdmin.findOne({
-        where: {user_id: userId, event_id: eventId},
-    });
-    return check !== null;
-};
-
-
 getUsersByPhones = async function(phones) {
     let resJson = null;
     const admin = [];
@@ -463,12 +440,12 @@ router.post('/', async function(req, res, next) {
 router.put('/:id', async function(req, res, next) {
     const responseJson = {};
     const body = req.body;
-    const userId = res.locals.user.id;
+    const myId = res.locals.user.id;
     const eventId = req.params.id;
     const transaction = await sequelize.transaction();
 
     try {
-        if(await masterCheck(userId, eventId)) {
+        if(await util.masterCheck(myId, eventId)) {
             const {resJson, admin} = await getUsersByPhones(body.eventAdmin);
 
             if(resJson) {
@@ -603,7 +580,7 @@ router.delete('/:id', async function(req, res, next) {
     const myId = res.locals.user.id;
     const transaction = await sequelize.transaction();
     try {
-        if(await masterCheck(myId, eventId)) {
+        if(await util.masterCheck(myId, eventId)) {
             const result = await Event.findOne(
                 {where: {id: eventId}},
             );
@@ -655,6 +632,7 @@ router.delete('/:id', async function(req, res, next) {
 
 router.get('/', async function(req, res, next) {
     const responseJson = {};
+    const myId = res.locals.user.id;
     try {
         const isHost = req.query.host;
         if(typeof isHost === 'undefined') {
@@ -664,7 +642,7 @@ router.get('/', async function(req, res, next) {
         else if(isHost === 'true') {
             const result1 = await Event.findAll(
                 {
-                    where: {user_id: res.locals.user.id},
+                    where: {user_id: myId},
                     order: [
                         ['is_activated', 'DESC'],
                         ['event_datetime', 'DESC'],
@@ -674,7 +652,7 @@ router.get('/', async function(req, res, next) {
             const result2 = await Event.findAll({
                 include: [{
                     model: EventAdmin,
-                    where: {user_id: res.locals.user.id},
+                    where: {user_id: myId},
                 }],
                 order: [
                     ['is_activated', 'DESC'],
@@ -712,7 +690,7 @@ router.get('/', async function(req, res, next) {
             const result = await Event.findAll({
                 include: [{
                     model: Guest,
-                    where: {user_id: res.locals.user.id},
+                    where: {user_id: myId},
                 }],
                 order: [
                     ['is_activated', 'DESC'],
@@ -753,10 +731,10 @@ router.get('/:id', async function(req, res, next) {
                 data.userType = 'master';
             }
             else {
-                if(await adminCheck(myId, eventId)) {
+                if(await util.adminCheck(myId, eventId)) {
                     data.userType = 'admin';
                 }
-                else if(await guestCheck(myId, eventId)) {
+                else if(await util.guestCheck(myId, eventId)) {
                     data.userType = 'guest';
                 }
             }
@@ -794,7 +772,7 @@ router.put('/close/:id', async function(req, res, next) {
     const eventId = req.params.id;
     const myId = res.locals.user.id;
     try {
-        if(await masterCheck(myId, eventId)) {
+        if(await util.masterCheck(myId, eventId)) {
             const result = await Event.update(
                 {
                     is_activated: false,
@@ -841,14 +819,14 @@ router.get('/invite/:hash', async function(req, res, next) {
         }
         else {
             const eventId = result.dataValues.id;
-            const hostCheck = result.dataValues.user_id == hostId || await adminCheck(hostId, eventId);
+            const hostCheck = result.dataValues.user_id == hostId || await util.adminCheck(hostId, eventId);
             if(hostCheck) {
                 const data = {event_id: eventId};
                 if(result.dataValues.user_id == myId) {
                     data.userType = 'master';
                 }
                 else {
-                    if(await adminCheck(myId, eventId)) {
+                    if(await util.adminCheck(myId, eventId)) {
                         data.userType = 'admin';
                     }
                     else {
