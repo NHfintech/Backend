@@ -4,6 +4,9 @@ const crypto = require('crypto');
 const {sequelize, User, Event, EventAdmin, Guest, BreakDown} = require('../models');
 const util = require('../utils');
 const code = util.code;
+const path = require('path');
+const env = process.env.NODE_ENV || 'development';
+const config = require(path.join(__dirname, '..', 'config', 'config.json'))[env];
 
 getUsersByPhones = async function(phones) {
     let resJson = null;
@@ -280,6 +283,7 @@ router.post('/', async function(req, res, next) {
                 {transaction},
             );
             const eventId = result.dataValues.id;
+            console.log(eventId);
             res.locals.eventId = eventId;
             res.locals.title = result.dataValues.title;
             res.locals.eventDatetime = result.dataValues.event_datetime;
@@ -368,13 +372,13 @@ router.post('/', async function(req, res, next) {
 
         const title = res.locals.title;
         const content = res.locals.title + '의 관리자로 초대되었습니다.';
-        const link = '서버주소/event/' + res.locals.pEventId;
+        const link = config.serverAddress + '/event/' + res.locals.eventId;
 
         if(fbTokens.length !== 0) {
             const fcm = await util.sendFcm(
                 title,
                 content,
-                '서버주소/event/' + res.locals.eventId,
+                link,
                 fbTokens,
             );
         }
@@ -425,6 +429,8 @@ router.post('/', async function(req, res, next) {
             );
         }
 
+        console.log(link);
+
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'success';
         responseJson.data = {id: res.locals.eventId};
@@ -446,7 +452,6 @@ router.put('/:id', async function(req, res, next) {
     const myId = res.locals.user.id;
     const eventId = req.params.id;
     const transaction = await sequelize.transaction();
-
     try {
         if(await util.masterCheck(myId, eventId)) {
             const {resJson, admin} = await getUsersByPhones(body.eventAdmin);
@@ -459,7 +464,6 @@ router.put('/:id', async function(req, res, next) {
             const result = await Event.findOne(
                 {where: {id: eventId}},
             );
-
             if(result.dataValues.is_activated === 0) {
                 responseJson.result = code.UNKNOWN_ERROR;
                 responseJson.detail = 'event is terminated';
@@ -484,7 +488,7 @@ router.put('/:id', async function(req, res, next) {
                     where: {
                         id: eventId,
                     },
-                    transaction,
+                    // transaction,
                 },
             );
 
@@ -502,7 +506,7 @@ router.put('/:id', async function(req, res, next) {
                         where: {
                             id: result.dataValues.pair_id,
                         },
-                        transaction,
+                        // transaction,
                     },
                 );
             }
@@ -541,7 +545,8 @@ router.put('/:id', async function(req, res, next) {
 
                 const title = body.title;
                 const content = title + '의 관리자로 초대되었습니다.';
-                const link = '서버주소/event/' + eventId;
+                const link = config.serverAddress + '/event/' + eventId;
+                console.log(link);
 
                 if (fcmList.length !== 0) {
                     const sendFcm = await util.sendFcm(
