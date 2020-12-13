@@ -21,6 +21,7 @@
         "serviceId": "네이버 sms 서비스 아이디",
         "serviceKey": "네이버 sms 서비스 키",
         "ncsAccessKey": "네이버 개발자 access key",
-        "ncsSecretKey": "네이버 개발자 secret key"
+        "ncsSecretKey": "네이버 개발자 secret key",
+        "serverAddress": "server address"
     }
 }
