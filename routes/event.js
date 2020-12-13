@@ -370,7 +370,7 @@ router.post('/', async function(req, res, next) {
 
         const title = res.locals.title;
         const content = res.locals.title + '의 관리자로 초대되었습니다.';
-        const link = config.serverAddress + '/event/' + res.locals.eventId;
+        const link = config.webAddress + '/event/' + res.locals.eventId;
 
         if(fbTokens.length !== 0) {
             await util.sendFcm(
@@ -546,7 +546,7 @@ router.put('/:id', async function(req, res, next) {
 
                 const title = body.title;
                 const content = title + '의 관리자로 초대되었습니다.';
-                const link = config.serverAddress + '/event/' + eventId;
+                const link = config.webAddress + '/event/' + eventId;
 
                 if (fcmList.length !== 0) {
                     await util.sendFcm(
