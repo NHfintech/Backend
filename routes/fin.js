@@ -341,7 +341,7 @@ router.post('/receive', async function(req, res, next) {
 
         if(nhResult.data.Header.Rpcd !== '00000') {
             responseJson.result = code.NH_API_ERROR;
-            responseJson.detail = result.data.Header.Rsms;
+            responseJson.detail = nhResult.data.Header.Rsms;
             res.json(responseJson);
         }
         else {
