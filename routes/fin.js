@@ -310,8 +310,6 @@ router.post('/receive', async function(req, res, next) {
                     [sequelize.fn('sum', sequelize.col('money')), 'totalMoney'],
                 ],
                 group: ['event_id'],
-            },
-            {
                 where: {
                     event_id: res.locals.eventId,
                     is_direct_input: false,
