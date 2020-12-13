@@ -14,21 +14,6 @@ function jwtSignUser(user) {
     });
 }
 
-// function getUser(req, res) {
-//     if (req.headers && req.headers.authorization) {
-//       let authorization = req.headers.authorization
-//       let decoded = ''
-//       try {
-//         decoded = jwt.verify(authorization, config.jwtSecret);
-//       } catch (e) {
-//         return {detail: 'unauthorized'}
-//       }
-//       return {detail: 'success', user: decoded.data}
-//       // Fetch the user by id
-//     }
-//     return {detail: 'no header'};
-// }
-
 // TODO : DELETE
 router.get('/', function(req, res, next) {
     const session = req.session;
@@ -47,13 +32,11 @@ router.post('/login', async function(req, res, next) {
         const user = await User.findOne({attributes: ['id', 'password', 'fin_account', 'name'], where: {username: body.username}});
 
         if(user === null) {
-            console.log('cannot find user');
             res.status(404).json({
                 'detail': 'No user found.',
             });
         }
         else {
-            console.log(user.dataValues);
             const dbPassword = user.dataValues.password;
             const inputPassword = body.password;
 
@@ -63,7 +46,6 @@ router.post('/login', async function(req, res, next) {
             // if(dbPassword === hashPassword){
 
             if(bcrypt.compareSync(inputPassword, dbPassword)) {
-                console.log('pw correct');
                 res.json({
                     auth: true,
                     token: jwtSignUser(user),
@@ -71,7 +53,6 @@ router.post('/login', async function(req, res, next) {
                 });
             }
             else {
-                console.log('pw incorrect');
                 res.status(401).json({
                     auth: false,
                     token: null,
@@ -80,7 +61,6 @@ router.post('/login', async function(req, res, next) {
         }
     }
     catch (error) {
-        console.log('Login Error');
         next(error);
     }
 });

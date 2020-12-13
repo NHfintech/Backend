@@ -105,7 +105,7 @@ router.post('/', async function(req, res, next) {
         const myId = res.locals.user.id;
         const finAcno = res.locals.FinAcno;
 
-        const result = await User.update(
+        await User.update(
             {
                 fin_account: finAcno,
             },
@@ -225,7 +225,7 @@ router.post('/transfer', async function(req, res, next) {
     try {
         await BreakDown.create(data);
         if(!await util.guestCheck(myId, eventId)) {
-            const result = await Guest.create({
+            await Guest.create({
                 user_id: myId,
                 event_id: eventId,
                 eventAdmin_id: masterId,
@@ -265,15 +265,13 @@ router.post('/receive', async function(req, res, next) {
             return;
         }
 
-        console.log(result);
-
         if(result.dataValues.is_activated) {
             responseJson.result = code.UNKNOWN_ERROR;
             responseJson.detail = 'event is not terminated';
             res.json(responseJson);
             return;
         }
-      
+
         if(result.dataValues.is_received) {
             responseJson.result = code.UNKNOWN_ERROR;
             responseJson.detail = 'already received';
@@ -362,7 +360,7 @@ router.post('/receive', async function(req, res, next) {
     const responseJson = {};
 
     try {
-        const result = await Event.update(
+        await Event.update(
             {
                 is_received: true,
             },

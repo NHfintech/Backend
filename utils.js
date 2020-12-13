@@ -157,10 +157,9 @@ value.sendSms = async function (phoneList, content) {
     };
 
     try {
-        const result = await axios.post(apiURL, reqBody, {
+        await axios.post(apiURL, reqBody, {
             headers: reqHeader,
         });
-        // console.log(result);
     }
     catch (exception) {
         console.log(exception);

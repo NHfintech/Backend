@@ -75,7 +75,6 @@ router.get('/event/:eventId', async function(req, res, next) {
             list.push(temp);
         }
 
-        console.log(list);
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'success';
         responseJson.data = list;
@@ -127,7 +126,6 @@ router.get('/sender', async function(req, res, next) {
                 list.push(temp);
             }
         }
-        console.log(list);
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'success';
         responseJson.data = list;
@@ -162,13 +160,12 @@ router.post('/', async function(req, res, next) {
             is_direct_input: true,
         };
 
-        const result = await BreakDown.create(data);
+        await BreakDown.create(data);
 
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'breakdown insert success';
     }
     catch(exception) {
-        console.log(exception);
         responseJson.result = code.UNKNOWN_ERROR;
         responseJson.detail = 'unknown error';
     }

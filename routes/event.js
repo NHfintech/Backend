@@ -175,7 +175,8 @@ router.post('/', async function(req, res, next) {
             const eventId = result.dataValues.id;
             const pEventId = result2.dataValues.id;
             const encrypt = crypto.createHash('sha256').update(eventId + ' ').digest('hex');
-            const updateResult = await Event.update(
+
+            await Event.update(
                 {
                     event_hash: encrypt,
                     pair_id: pEventId,
@@ -188,7 +189,7 @@ router.post('/', async function(req, res, next) {
                 },
             );
             const encrypt2 = crypto.createHash('sha256').update(pEventId + ' ').digest('hex');
-            const updateResult2 = await Event.update(
+            await Event.update(
                 {
                     event_hash: encrypt2,
                     pair_id: eventId,
@@ -226,7 +227,7 @@ router.post('/', async function(req, res, next) {
                 noUser: myNoUserAdmin,
             };
 
-            const result4 = await EventAdmin.bulkCreate(urAdmin, {transaction});
+            await EventAdmin.bulkCreate(urAdmin, {transaction});
             const urUserAdmin = [];
             const urNoUserAdmin = [];
             for(let i = 0; i < result3.length; i++) {
@@ -254,7 +255,6 @@ router.post('/', async function(req, res, next) {
             next();
         }
         catch(exception) {
-            console.log(exception);
             if (transaction) {
                 await transaction.rollback();
             }
@@ -283,7 +283,6 @@ router.post('/', async function(req, res, next) {
                 {transaction},
             );
             const eventId = result.dataValues.id;
-            console.log(eventId);
             res.locals.eventId = eventId;
             res.locals.title = result.dataValues.title;
             res.locals.eventDatetime = result.dataValues.event_datetime;
@@ -292,7 +291,7 @@ router.post('/', async function(req, res, next) {
                 admins[i].event_id = eventId;
             }
             const encrypt = crypto.createHash('sha256').update(eventId + ' ').digest('hex');
-            const updateResult = await Event.update(
+            await Event.update(
                 {
                     event_hash: encrypt,
                 },
@@ -329,7 +328,6 @@ router.post('/', async function(req, res, next) {
             next();
         }
         catch(exception) {
-            console.log(exception);
             if (transaction) {
                 await transaction.rollback();
             }
@@ -375,7 +373,7 @@ router.post('/', async function(req, res, next) {
         const link = config.serverAddress + '/event/' + res.locals.eventId;
 
         if(fbTokens.length !== 0) {
-            const fcm = await util.sendFcm(
+            await util.sendFcm(
                 title,
                 content,
                 link,
@@ -405,7 +403,7 @@ router.post('/', async function(req, res, next) {
             }
 
             if(fbTokens2.length !== 0) {
-                const fcm = await util.sendFcm(
+                await util.sendFcm(
                     res.locals.title,
                     res.locals.title + '의 관리자로 초대되었습니다.\n' + '시간 : ' + res.locals.eventDatetime + '\n',
                     link,
@@ -414,29 +412,25 @@ router.post('/', async function(req, res, next) {
             }
 
             if(pAdminIds.noUser.length !== 0) {
-                const sms = await util.sendSms(
+                await util.sendSms(
                     adminIds.noUser,
                     content + '\n' + link,
                 );
             }
         }
 
-        // TODO : admins.noUser = 회원가입 안된 사람들 문자로
         if(adminIds.noUser.length !== 0) {
-            const sms = await util.sendSms(
+            await util.sendSms(
                 adminIds.noUser,
                 content + '\n' + link,
             );
         }
-
-        console.log(link);
 
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'success';
         responseJson.data = {id: res.locals.eventId};
     }
     catch(exception) {
-        console.log(exception);
         responseJson.result = code.UNKNOWN_ERROR;
         responseJson.detail = 'fcm or sms error';
     }
@@ -475,7 +469,7 @@ router.put('/:id', async function(req, res, next) {
                 admin[i].event_id = eventId;
             }
 
-            const result1 = await Event.update(
+            await Event.update(
                 {
                     title: body.title,
                     location: body.location,
@@ -525,7 +519,7 @@ router.put('/:id', async function(req, res, next) {
                         },
                     );
                     if (result2 === null) {
-                        const result4 = await EventAdmin.create(
+                        await EventAdmin.create(
                             {
                                 user_id: admin[i].user_id,
                                 user_phone: admin[i].user_phone,
@@ -553,10 +547,9 @@ router.put('/:id', async function(req, res, next) {
                 const title = body.title;
                 const content = title + '의 관리자로 초대되었습니다.';
                 const link = config.serverAddress + '/event/' + eventId;
-                console.log(link);
 
                 if (fcmList.length !== 0) {
-                    const sendFcm = await util.sendFcm(
+                    await util.sendFcm(
                         title,
                         content,
                         link,
@@ -565,7 +558,7 @@ router.put('/:id', async function(req, res, next) {
                 }
 
                 if (smsList.length !== 0) {
-                    const sendSms = await util.sendSms(
+                    await util.sendSms(
                         smsList,
                         content + '\n' + link,
                     );
@@ -721,7 +714,6 @@ router.get('/', async function(req, res, next) {
         }
     }
     catch(exception) {
-        console.log(exception);
         responseJson.result = code.UNKNOWN_ERROR;
         responseJson.detail = 'unknown error';
     }
@@ -777,7 +769,6 @@ router.get('/:id', async function(req, res, next) {
     catch(exception) {
         responseJson.result = code.UNKNOWN_ERROR;
         responseJson.detail = 'unknown error';
-        console.log(exception);
     }
     finally {
         res.json(responseJson);
@@ -791,7 +782,7 @@ router.put('/close/:id', async function(req, res, next) {
     const myId = res.locals.user.id;
     try {
         if(await util.masterCheck(myId, eventId)) {
-            const result = await Event.update(
+            await Event.update(
                 {
                     is_activated: false,
                 },
@@ -810,7 +801,6 @@ router.put('/close/:id', async function(req, res, next) {
         }
     }
     catch(exception) {
-        console.log(exception);
         responseJson.result = code.UNKNOWN_ERROR;
         responseJson.detail = 'unknown error';
     }
@@ -852,7 +842,7 @@ router.get('/invite/:hash', async function(req, res, next) {
                     }
                 }
                 if(data.userType === 'guest') {
-                    const result2 = await Guest.findOrCreate({
+                    await Guest.findOrCreate({
                         where: {
                             user_id: myId,
                             event_id: eventId,
@@ -873,7 +863,6 @@ router.get('/invite/:hash', async function(req, res, next) {
     catch(exception) {
         responseJson.result = code.UNKNOWN_ERROR;
         responseJson.detail = 'unknown error';
-        console.log(exception);
     }
     finally {
         res.json(responseJson);

@@ -10,8 +10,6 @@ const util = require('./utils');
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
-
-// TODO: not use yet
 const breakdownRouter = require('./routes/breakdown');
 const eventRouter = require('./routes/event');
 const finRouter = require('./routes/fin');
