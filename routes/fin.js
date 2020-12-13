@@ -320,7 +320,7 @@ router.post('/receive', async function(req, res, next) {
         );
         const tram = result[0].dataValues.totalMoney;
         let apiNm = '';
-        if(apiNm === '011' || apiNm === '012') {
+        if(bncd === '011' || bncd === '012') {
             apiNm = 'ReceivedTransferAccountNumber';
         }
         else {
