@@ -26,7 +26,7 @@ router.get('/event/:eventId', async function(req, res, next) {
                         model: BreakDown,
                         where: {
                             event_id: eventId,
-                            sender_name: null,
+                            is_direct_input: false,
                         },
                         attributes: ['id', 'transfer_datetime', 'message', 'money'],
                     },
@@ -55,7 +55,7 @@ router.get('/event/:eventId', async function(req, res, next) {
             {
                 where: {
                     event_id: eventId,
-                    is_direct_input: false,
+                    is_direct_input: true,
                 },
                 attributes: ['id', 'sender_name', 'transfer_datetime', 'message', 'money'],
             },
