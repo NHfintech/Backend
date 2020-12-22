@@ -1,21 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const {User} = require('../models');
+const {sequelize, User, EventAdmin} = require('../models');
 const bcrypt = require('bcrypt');
 const util = require('../utils.js');
-const saltRounds = 10;
 const code = util.code;
-
-const responseJson = {};
 
 /* GET users listing. */
 // 핸드폰번호 중복체크
 // 회원인지 확인하고 문자 아니면 알림 보낼때 사용
 router.get('/overlap/phone', async function(req, res, next) {
+    const responseJson = {};
     if(!util.phoneNumberCheck(req.query.phone_number)) {
         responseJson.result = code.PHONE_NUMBER_INVALID;
         responseJson.detail = 'phone number invalid';
-    } else {
+    }
+    else {
         const result = await User.findOne(
             {where: {phone_number: req.query.phone_number}},
         );
@@ -23,7 +22,8 @@ router.get('/overlap/phone', async function(req, res, next) {
         if(result == null) {
             responseJson.result = code.SUCCESS;
             responseJson.detail = 'no exist';
-        } else {
+        }
+        else {
             responseJson.result = code.PHONE_NUMBER_ALREADY_EXIST;
             responseJson.detail = 'phone number already exist';
         }
@@ -33,6 +33,7 @@ router.get('/overlap/phone', async function(req, res, next) {
 
 // 아이디 중복체크
 router.get('/overlap/username', async function(req, res, next) {
+    const responseJson = {};
     const result = await User.findOne(
         {where: {username: req.query.username}},
     );
@@ -40,7 +41,8 @@ router.get('/overlap/username', async function(req, res, next) {
     if(result == null) {
         responseJson.result = code.SUCCESS;
         responseJson.detail = 'no exist';
-    } else {
+    }
+    else {
         responseJson.result = code.USERNAME_ALREADY_EXIST;
         responseJson.detail = 'username already exist';
     }
@@ -49,24 +51,82 @@ router.get('/overlap/username', async function(req, res, next) {
 
 // 회원가입
 router.post('/signup', async function(req, res, next) {
+    const responseJson = {};
+    let transaction = await sequelize.transaction();
     try {
         if(util.phoneNumberCheck(req.body.phone_number)) {
+            const bcPw = bcrypt.hashSync(req.body.password, util.saltRounds);
             const result = await User.create({
                 username: req.body.username,
-                password: bcrypt.hashSync(req.body.password, saltRounds),
+                password: bcPw,
                 name: req.body.name,
                 phone_number: req.body.phone_number,
-            });
+            }, {transaction});
             responseJson.result = code.SUCCESS;
             responseJson.detail = 'signup success';
-        } else {
+
+            const userId = result.dataValues.id;
+            const isInvited = await EventAdmin.findOne(
+                {where: {user_phone: req.body.phone_number}},
+            );
+
+            if(isInvited) {
+                await EventAdmin.update(
+                    {
+                        user_id: userId,
+                    },
+                    {
+                        where: {
+                            user_phone: req.body.phone_number,
+                        },
+                        transaction
+                    }
+                );
+            }
+            await transaction.commit();
+        }
+        else {
             responseJson.result = code.PHONE_NUMBER_INVALID;
             responseJson.detail = 'phone number invalid';
         }
-    } catch(exception) {
+    }
+    catch(exception) {
+        if (transaction) {
+             await transaction.rollback();
+        }
         responseJson.result = code.UNKNOWN_ERROR;
-        responseJson.detail = exception.errors[0].message;
-    } finally {
+        responseJson.detail = 'sign up error';
+    }
+    finally {
+        res.json(responseJson);
+    }
+});
+
+router.put('/:id/token', async function(req, res, next) {
+    const responseJson = {};
+    try {
+        const token = req.body.token;
+        console.dir(req.body);
+        const result = User.update(
+            {
+                firebase_token: token,
+            },
+            {
+                where: {
+                    id: req.params.id,
+                },
+            },
+        );
+
+        responseJson.result = code.SUCCESS;
+        responseJson.detail = 'update firebase token success';
+        responseJson.data = result;
+    }
+    catch(exception) {
+        responseJson.result = code.UNKNOWN_ERROR;
+        responseJson.detail = 'unknown error';
+    }
+    finally {
         res.json(responseJson);
     }
 });

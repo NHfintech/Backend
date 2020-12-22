@@ -30,6 +30,11 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             unique: true,
         },
+        firebase_token: {
+            type: DataTypes.STRING(200),
+            allowNull: true,
+            unique: true,
+        },
     },
     {
         timestamps: false,

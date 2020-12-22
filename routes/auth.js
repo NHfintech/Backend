@@ -34,7 +34,8 @@ router.get('/', function(req, res, next) {
     const session = req.session;
     if(session.name) {
         res.json(session.name);
-    } else{
+    }
+    else{
         res.json('login fail');
     }
 });
@@ -43,14 +44,15 @@ router.get('/', function(req, res, next) {
 router.post('/login', async function(req, res, next) {
     try {
         const {body} = req;
-        const user = await User.findOne({attributes: ['id', 'password'], where: {username: body.username}});
+        const user = await User.findOne({attributes: ['id', 'password', 'fin_account','name'], where: {username: body.username}});
 
         if(user === null) {
             console.log('cannot find user');
             res.status(404).json({
                 'detail': 'No user found.',
             });
-        } else {
+        }
+        else {
             console.log(user.dataValues);
             const dbPassword = user.dataValues.password;
             const inputPassword = body.password;
@@ -67,7 +69,8 @@ router.post('/login', async function(req, res, next) {
                     token: jwtSignUser(user),
                     user: user,
                 });
-            } else {
+            }
+            else {
                 console.log('pw incorrect');
                 res.status(401).json({
                     auth: false,
@@ -75,7 +78,8 @@ router.post('/login', async function(req, res, next) {
                 });
             }
         }
-    } catch (error) {
+    }
+    catch (error) {
         console.log('Login Error');
         next(error);
     }

@@ -7,6 +7,11 @@ module.exports = (sequelize, DataTypes) => {
             autoIncrement: true,
             primaryKey: true,
         },
+        event_hash: {
+            type: DataTypes.STRING(100),
+            unique: true,
+            allowNull: true,
+        },
         user_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
@@ -32,17 +37,18 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             defaultValue: null,
         },
-        start_datetime: {
-            type: DataTypes.DATE,
-            allowNull: false,
-        },
-        end_datetime: {
+        event_datetime: {
             type: DataTypes.DATE,
             allowNull: false,
         },
         is_activated: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
+        },
+        is_received: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
         },
     },
     {

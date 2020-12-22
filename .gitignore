@@ -2,4 +2,5 @@ node_modules
 .idea
 package-lock.json
 config/config.json
-test.js
+fcm.js
+serviceAccountKey.json
